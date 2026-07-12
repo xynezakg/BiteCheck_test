@@ -376,6 +376,7 @@ export default function StallManager() {
             </div>
           </div>
         </div>
+      )}
       {/* ─── SECURE SUDO DELETE MODAL ─── */}
       {sudoDeleteModal.isOpen && (() => {
         const requiredPhrase = `sudo-delete-${sudoDeleteModal.stallName.toLowerCase().replace(/\s+/g, '-')}`;
