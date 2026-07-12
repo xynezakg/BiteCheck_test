@@ -3,16 +3,16 @@ require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
-const { keyPairFromSeed } = require('./eddsa'); 
+const { keyPairFromSeed } = require('./eddsa');
 
 const app = express();
 
 // Set up CORS - Strictly allow only your frontend URLs
 app.use(cors({
     origin: [
-        'http://localhost:3000', 
-        'https://ua-canteen-evaluation.vercel.app',
-        'https://ua-canteen-web.onrender.com' // <--- Your Render Frontend
+        'http://localhost:3000',
+        'https://bite-check-backend.vercel.app/',
+        'https://bite-check-frontend.vercel.app/' // <--- Your Render Frontend
     ],
     credentials: true
 }));
