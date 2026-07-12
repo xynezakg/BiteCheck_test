@@ -7,11 +7,7 @@ export default function StallManager() {
   const [newName, setNewName] = useState("");
   const [newImage, setNewImage] = useState(null);
   const [newEmail, setNewEmail] = useState("");
-<<<<<<< HEAD
   const [newCanteenGroup, setNewCanteenGroup] = useState("College");
-=======
-  const [newCanteenGroup, setNewCanteenGroup] = useState("");
->>>>>>> b4cef41be28ab774fd2f3021e0eeb5ba35646472
   const [editingStallId, setEditingStallId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -80,25 +76,16 @@ export default function StallManager() {
       const isEditing = !!editingStallId;
       const existingStall = isEditing ? stalls.find(s => s.id === editingStallId) : null;
       const emailInput = newEmail.trim();
-      const groupInput = newCanteenGroup || null;
       // Check if it's a new email or if the email was changed during an update
       const emailChanged = isEditing ? (existingStall?.email !== emailInput) : !!emailInput;
 
       if (isEditing) {
         // Edit Existing
-<<<<<<< HEAD
         const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput, newCanteenGroup);
         setStalls(stalls.map(s => s.id === editingStallId ? updated : s));
       } else {
         // Add New
         const newStall = await addStall(newName.trim(), newImage, emailInput, newCanteenGroup);
-=======
-        const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput, groupInput);
-        setStalls(stalls.map(s => s.id === editingStallId ? updated : s));
-      } else {
-        // Add New
-        const newStall = await addStall(newName.trim(), newImage, emailInput, groupInput);
->>>>>>> b4cef41be28ab774fd2f3021e0eeb5ba35646472
         setStalls([...stalls, newStall]);
       }
 
@@ -121,11 +108,7 @@ export default function StallManager() {
     setNewName(stall.name);
     setNewImage(stall.image || null);
     setNewEmail(stall.email || "");
-<<<<<<< HEAD
     setNewCanteenGroup(stall.canteen_group || "College");
-=======
-    setNewCanteenGroup(stall.canteen_group || "");
->>>>>>> b4cef41be28ab774fd2f3021e0eeb5ba35646472
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to the form
   };
 
@@ -134,11 +117,7 @@ export default function StallManager() {
     setNewName("");
     setNewImage(null);
     setNewEmail("");
-<<<<<<< HEAD
     setNewCanteenGroup("College");
-=======
-    setNewCanteenGroup("");
->>>>>>> b4cef41be28ab774fd2f3021e0eeb5ba35646472
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
