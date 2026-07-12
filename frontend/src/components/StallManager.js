@@ -7,6 +7,7 @@ export default function StallManager() {
   const [newName, setNewName] = useState("");
   const [newImage, setNewImage] = useState(null);
   const [newEmail, setNewEmail] = useState("");
+  const [newCanteenGroup, setNewCanteenGroup] = useState("College");
   const [editingStallId, setEditingStallId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -80,11 +81,11 @@ export default function StallManager() {
 
       if (isEditing) {
         // Edit Existing
-        const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput);
+        const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput, newCanteenGroup);
         setStalls(stalls.map(s => s.id === editingStallId ? updated : s));
       } else {
         // Add New
-        const newStall = await addStall(newName.trim(), newImage, emailInput);
+        const newStall = await addStall(newName.trim(), newImage, emailInput, newCanteenGroup);
         setStalls([...stalls, newStall]);
       }
 
@@ -107,6 +108,7 @@ export default function StallManager() {
     setNewName(stall.name);
     setNewImage(stall.image || null);
     setNewEmail(stall.email || "");
+    setNewCanteenGroup(stall.canteen_group || "College");
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to the form
   };
 
@@ -115,6 +117,7 @@ export default function StallManager() {
     setNewName("");
     setNewImage(null);
     setNewEmail("");
+    setNewCanteenGroup("College");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -255,6 +258,18 @@ export default function StallManager() {
             </div>
 
             <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Canteen Group <span style={{ color: colors.red }}>*</span></label>
+              <select
+                value={newCanteenGroup}
+                onChange={(e) => setNewCanteenGroup(e.target.value)}
+                style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', backgroundColor: '#FFFFFF', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              >
+                <option value="SHS">SHS</option>
+                <option value="College">College</option>
+              </select>
+            </div>
+
+            <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Cover Photo </label>
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
 
@@ -326,7 +341,22 @@ export default function StallManager() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <span style={{ fontWeight: 600, color: colors.text, fontSize: '15px' }}>{stall.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, color: colors.text, fontSize: '15px' }}>{stall.name}</span>
+                    {stall.canteen_group && (
+                      <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: 700, 
+                        color: stall.canteen_group === 'College' ? '#3B82F6' : '#EF4444', 
+                        backgroundColor: stall.canteen_group === 'College' ? '#EFF6FF' : '#FEF2F2',
+                        padding: '2px 6px', 
+                        borderRadius: '4px',
+                        border: `1px solid ${stall.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
+                      }}>
+                        {stall.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
+                      </span>
+                    )}
+                  </div>
                   {stall.email && (
                     <span style={{ fontSize: '12px', color: stall.is_email_verified ? colors.blue : colors.textMuted, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                       <Mail size={12} /> {stall.email} {stall.is_email_verified ? '(Verified)' : '(Unverified)'}

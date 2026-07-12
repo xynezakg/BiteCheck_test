@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls } from "../api";
-import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, BookOpen, UtensilsCrossed } from 'lucide-react';
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
@@ -14,6 +14,7 @@ export default function FeedbackForm({ navigate }) {
   const [form, setForm] = useState({ comment: "" });
 
   const [selectedStall, setSelectedStall] = useState("");
+  const [selectedCanteen, setSelectedCanteen] = useState(null);
   const [availableStalls, setAvailableStalls] = useState([]);
   const [loadingStalls, setLoadingStalls] = useState(true);
 
@@ -63,12 +64,15 @@ export default function FeedbackForm({ navigate }) {
             const matched = verifiedStalls.find(s => s.name.toLowerCase() === autoStall.toLowerCase());
             if (matched) {
               setSelectedStall(matched.name);
+              setSelectedCanteen(matched.canteen_group || "College");
               setStep(2); // 🔥 Instantly skip step 1 for QR code users to maximize UX speed!
             } else {
               setSelectedStall("General Feedback");
+              setSelectedCanteen("College");
             }
           } else if (data.length === 0) {
             setSelectedStall("General Feedback");
+            setSelectedCanteen("College");
           }
         }
       } catch (err) {
@@ -341,153 +345,297 @@ export default function FeedbackForm({ navigate }) {
               <div style={{ animation: 'fadeUp 0.4s ease' }}>
                 <div style={{ textAlign: 'center', marginBottom: '36px' }}>
                   <h2 style={{ fontSize: '26px', fontWeight: 800, color: colors.navy, margin: '0 0 10px 0', letterSpacing: '-0.02em' }}>Where did you eat?</h2>
-                  <p style={{ color: colors.textMuted, fontSize: '16px', margin: 0 }}>Select the food stall you would like to review to begin.</p>
+                  <p style={{ color: colors.textMuted, fontSize: '16px', margin: 0 }}>
+                    {selectedCanteen === null 
+                      ? "First, choose the canteen. Then select the stall you'd like to review."
+                      : "Select the food stall you would like to review to begin."
+                    }
+                  </p>
                 </div>
 
-                <div style={{ marginBottom: '48px' }}>
-                  {loadingStalls ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: colors.textMuted, fontSize: '15px', padding: '40px 0', justifyContent: 'center', backgroundColor: colors.bg, borderRadius: '16px' }}>
-                      <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} color={colors.navy} /> Loading available stalls...
+                {selectedCanteen === null ? (
+                  /* SELECT CANTEEN SELECTION */
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '48px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: colors.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px' }}>
+                      SELECT CANTEEN
                     </div>
-                  ) : availableStalls.length === 0 ? (
-                    <div style={{ padding: '40px', backgroundColor: colors.bg, borderRadius: '16px', border: `2px dashed ${colors.border}`, color: colors.textMuted, fontSize: '16px', textAlign: 'center' }}>
-                      <Store size={40} color="#CBD5E1" style={{ margin: '0 auto 16px auto', display: 'block' }} />
-                      No specific stalls are listed right now.<br />Your review will be submitted as <strong style={{ color: colors.navy }}>General Feedback</strong>.
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center', width: '100%' }}>
+                      
+                      {/* High School Canteen */}
+                      <div
+                        onClick={() => {
+                          setSelectedCanteen("SHS");
+                          setSelectedStall("");
+                        }}
+                        style={{
+                          width: '280px',
+                          padding: '36px 24px',
+                          backgroundColor: colors.white,
+                          borderRadius: '16px',
+                          border: `1px solid ${colors.border}`,
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.25s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '16px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(12, 35, 64, 0.08)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444' }}>
+                          <UtensilsCrossed size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>High School Canteen</h3>
+                          <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Select &rarr;
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* College Canteen */}
+                      <div
+                        onClick={() => {
+                          setSelectedCanteen("College");
+                          setSelectedStall("");
+                        }}
+                        style={{
+                          width: '280px',
+                          padding: '36px 24px',
+                          backgroundColor: colors.white,
+                          borderRadius: '16px',
+                          border: `1px solid ${colors.border}`,
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.25s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '16px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(12, 35, 64, 0.08)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6' }}>
+                          <BookOpen size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>College Canteen</h3>
+                          <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Select &rarr;
+                          </span>
+                        </div>
+                      </div>
+
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center' }}>
-                      {availableStalls.map((stall, index) => {
-                        const isSelected = selectedStall === stall.name;
+                  </div>
+                ) : (
+                  /* SELECT STALLS FILTERED BY CANTEEN */
+                  <div style={{ marginBottom: '48px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: `1px solid ${colors.border}`, paddingBottom: '16px' }}>
+                      <button 
+                        onClick={() => {
+                          setSelectedCanteen(null);
+                          setSelectedStall("");
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#3B82F6', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        &larr; Change Canteen
+                      </button>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: colors.navy, backgroundColor: selectedCanteen === 'College' ? '#EFF6FF' : '#FEF2F2', padding: '4px 10px', borderRadius: '12px' }}>
+                        {selectedCanteen === 'College' ? 'College Canteen' : 'High School Canteen'}
+                      </span>
+                    </div>
 
-                        // A beautiful array of different food images for variety
-                        const fallbackImages = [
-                          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80", // BBQ
-                          "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80", // Pizza
-                          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", // Healthy Bowl
-                          "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=400&q=80", // Pancakes
-                          "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=400&q=80"  // Burger
-                        ];
+                    {loadingStalls ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: colors.textMuted, fontSize: '15px', padding: '40px 0', justifyContent: 'center', backgroundColor: colors.bg, borderRadius: '16px' }}>
+                        <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} color={colors.navy} /> Loading available stalls...
+                      </div>
+                    ) : availableStalls.filter(stall => stall.canteen_group === selectedCanteen).length === 0 ? (
+                      <div style={{ padding: '40px', backgroundColor: colors.bg, borderRadius: '16px', border: `2px dashed ${colors.border}`, color: colors.textMuted, fontSize: '16px', textAlign: 'center' }}>
+                        <Store size={40} color="#CBD5E1" style={{ margin: '0 auto 16px auto', display: 'block' }} />
+                        No specific stalls are listed in this canteen right now.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center' }}>
+                        {availableStalls.filter(stall => stall.canteen_group === selectedCanteen).map((stall, index) => {
+                          const isSelected = selectedStall === stall.name;
 
-                        // Pick a unique placeholder based on the stall's position in the list
-                        const uniquePlaceholder = fallbackImages[index % fallbackImages.length];
+                          const fallbackImages = [
+                            "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80",
+                            "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80",
+                            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
+                            "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=400&q=80",
+                            "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=400&q=80"
+                          ];
 
-                        // Checks multiple possible database column names just in case!
-                        const stallImage = stall.image || stall.photo || stall.imageUrl || stall.attachment || uniquePlaceholder;
+                          const uniquePlaceholder = fallbackImages[index % fallbackImages.length];
+                          const stallImage = stall.image || stall.photo || stall.imageUrl || stall.attachment || uniquePlaceholder;
 
-                        return (
-                          <div
-                            key={stall.name}
-                            onClick={() => setSelectedStall(stall.name)}
-                            style={{
-                              width: '320px',
-                              backgroundColor: colors.white,
-                              borderRadius: '16px',
-                              overflow: 'hidden',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              boxShadow: isSelected ? `0 0 0 3px ${colors.navy}, 0 12px 24px rgba(12, 35, 64, 0.2)` : '0 4px 12px rgba(0,0,0,0.06)',
-                              transform: isSelected ? 'translateY(-4px)' : 'none',
-                              display: 'flex',
-                              flexDirection: 'column'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)';
-                                e.currentTarget.style.transform = 'none';
-                              }
-                            }}
-                          >
-                            {/* Card Image */}
-                            <div style={{
-                              height: '140px',
-                              width: '100%',
-                              backgroundImage: `url("${stallImage}")`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              position: 'relative'
-                            }}>
-                              {isSelected && (
-                                <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: colors.white, borderRadius: '50%', padding: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                                  <CheckCircle2 size={24} color={colors.navy} fill={colors.gold} />
+                          return (
+                            <div
+                              key={stall.name}
+                              onClick={() => setSelectedStall(stall.name)}
+                              style={{
+                                width: '320px',
+                                backgroundColor: colors.white,
+                                borderRadius: '16px',
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isSelected ? `0 0 0 3px ${colors.navy}, 0 12px 24px rgba(12, 35, 64, 0.2)` : '0 4px 12px rgba(0,0,0,0.06)',
+                                transform: isSelected ? 'translateY(-4px)' : 'none',
+                                display: 'flex',
+                                flexDirection: 'column'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)';
+                                  e.currentTarget.style.transform = 'none';
+                                }
+                              }}
+                            >
+                              {/* Card Image */}
+                              <div style={{
+                                height: '140px',
+                                width: '100%',
+                                backgroundImage: `url("${stallImage}")`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                position: 'relative'
+                              }}>
+                                {isSelected && (
+                                  <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: colors.white, borderRadius: '50%', padding: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                                    <CheckCircle2 size={24} color={colors.navy} fill={colors.gold} />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Card Body */}
+                              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: colors.text, lineHeight: 1.3, flex: 1, paddingRight: '12px' }}>
+                                      {stall.name}
+                                    </h3>
+                                    <div style={{ textAlign: 'right' }}>
+                                      <div style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 500 }}>Services</div>
+                                      <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700 }}>Until 5PM</div>
+                                    </div>
+                                  </div>
+                                  {stall.canteen_group && (
+                                    <span style={{ 
+                                      alignSelf: 'flex-start',
+                                      fontSize: '11px', 
+                                      fontWeight: 700, 
+                                      color: stall.canteen_group === 'College' ? '#3B82F6' : '#EF4444', 
+                                      backgroundColor: stall.canteen_group === 'College' ? '#EFF6FF' : '#FEF2F2',
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px',
+                                      border: `1px solid ${stall.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
+                                    }}>
+                                      {stall.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                            </div>
 
-                            {/* Card Body */}
-                            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+                                  <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Food Service</span>
+                                  <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Beverages</span>
+                                </div>
 
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: colors.text, lineHeight: 1.3, flex: 1, paddingRight: '12px' }}>
-                                  {stall.name}
-                                </h3>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 500 }}>Services</div>
-                                  <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700 }}>Until 5PM</div>
+                                <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                                  <button style={{
+                                    flex: 1, padding: '10px 0',
+                                    backgroundColor: isSelected ? colors.navy : '#1E40AF',
+                                    color: colors.white, border: 'none', borderRadius: '6px',
+                                    fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}>
+                                    {isSelected ? 'Selected' : 'Select Stall'}
+                                  </button>
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                                <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Food Service</span>
-                                <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Beverages</span>
-                              </div>
-
-                              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                                <button style={{
-                                  flex: 1, padding: '10px 0',
-                                  backgroundColor: isSelected ? colors.navy : '#1E40AF',
-                                  color: colors.white, border: 'none', borderRadius: '6px',
-                                  fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}>
-                                  {isSelected ? 'Selected' : 'Select Stall'}
-                                </button>
-                              </div>
-
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                <div style={{ display: 'flex', justifyContent: 'center', borderTop: `1px solid ${colors.border}`, paddingTop: '32px' }}>
-                  <button
-                    type="button"
-                    disabled={!selectedStall}
-                    style={{
-                      padding: '16px 48px', fontSize: '16px', fontWeight: 600,
-                      backgroundColor: selectedStall ? colors.navy : '#94A3B8',
-                      color: colors.white, border: 'none', borderRadius: '12px',
-                      cursor: selectedStall ? 'pointer' : 'not-allowed',
-                      transition: 'all 0.25s ease',
-                      boxShadow: selectedStall ? '0 8px 20px rgba(12, 35, 64, 0.25)' : 'none',
-                      fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '10px',
-                      transform: selectedStall ? 'translateY(0)' : 'none'
-                    }}
-                    onMouseEnter={(e) => { if (selectedStall) { e.currentTarget.style.backgroundColor = '#17365C'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
-                    onMouseLeave={(e) => { if (selectedStall) { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.transform = 'translateY(0)'; } }}
-                    onClick={() => setStep(2)}
-                  >
-                    Continue to Ratings <ArrowRight size={20} />
-                  </button>
-                </div>
+                {/* Continue button block */}
+                {selectedCanteen !== null && (
+                  <div style={{ display: 'flex', justifyContent: 'center', borderTop: `1px solid ${colors.border}`, paddingTop: '32px' }}>
+                    <button
+                      type="button"
+                      disabled={!selectedStall}
+                      style={{
+                        padding: '16px 48px', fontSize: '16px', fontWeight: 600,
+                        backgroundColor: selectedStall ? colors.navy : '#94A3B8',
+                        color: colors.white, border: 'none', borderRadius: '12px',
+                        cursor: selectedStall ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.25s ease',
+                        boxShadow: selectedStall ? '0 8px 20px rgba(12, 35, 64, 0.25)' : 'none',
+                        fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '10px',
+                        transform: selectedStall ? 'translateY(0)' : 'none'
+                      }}
+                      onMouseEnter={(e) => { if (selectedStall) { e.currentTarget.style.backgroundColor = '#17365C'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
+                      onMouseLeave={(e) => { if (selectedStall) { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.transform = 'translateY(0)'; } }}
+                      onClick={() => setStep(2)}
+                    >
+                      Continue to Ratings <ArrowRight size={20} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             {/* --- STEP 2: RATING & COMMENTS --- */}
-            {step === 2 && status !== "signing" && (
-              <div style={{ animation: 'fadeUp 0.4s ease' }}>
-                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                  <h2 style={{ fontSize: '22px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0' }}>Share your thoughts</h2>
-                  <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>Reviewing: <strong style={{ color: colors.navy }}>{selectedStall}</strong></p>
-                </div>
+            {step === 2 && status !== "signing" && (() => {
+              const selectedStallObj = availableStalls.find(s => s.name === selectedStall);
+              return (
+                <div style={{ animation: 'fadeUp 0.4s ease' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <h2 style={{ fontSize: '22px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0' }}>Share your thoughts</h2>
+                    <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      Reviewing: <strong style={{ color: colors.navy }}>{selectedStall}</strong>
+                      {selectedStallObj && selectedStallObj.canteen_group && (
+                        <span style={{ 
+                          fontSize: '11px', 
+                          fontWeight: 700, 
+                          color: selectedStallObj.canteen_group === 'College' ? '#3B82F6' : '#EF4444', 
+                          backgroundColor: selectedStallObj.canteen_group === 'College' ? '#EFF6FF' : '#FEF2F2',
+                          padding: '2px 6px', 
+                          borderRadius: '4px',
+                          border: `1px solid ${selectedStallObj.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
+                        }}>
+                          {selectedStallObj.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
                 <div className="form-grid">
                   {/* Ratings Column */}
@@ -623,7 +771,8 @@ export default function FeedbackForm({ navigate }) {
                   </button>
                 </div>
               </div>
-            )}
+            );
+          })()}
 
             {/* --- STEP 3: REVIEW --- */}
             {step === 3 && status !== "signing" && status !== "success" && (
