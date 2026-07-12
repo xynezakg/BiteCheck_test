@@ -123,6 +123,11 @@ async function editStall(id, name, image, email = null, is_email_verified = fals
     return result.rows[0];
 }
 
+async function getStallById(id) {
+    const result = await pool.query(`SELECT * FROM stalls WHERE id = $1`, [id]);
+    return result.rows[0];
+}
+
 async function getStallByToken(token) {
     const result = await pool.query(`SELECT * FROM stalls WHERE verification_token = $1`, [token]);
     return result.rows[0];
@@ -140,5 +145,5 @@ module.exports = {
     pool, addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
     getFeedbackPhoto,
     getAllStalls, addStall, editStall, deleteStall,
-    getStallByToken, verifyStallEmail
+    getStallByToken, verifyStallEmail, getStallById
 };

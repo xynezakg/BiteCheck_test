@@ -8,7 +8,7 @@ const {
     addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
     getFeedbackPhoto,
     getAllStalls, addStall, deleteStall, editStall,
-    getStallByToken, verifyStallEmail
+    getStallByToken, verifyStallEmail, getStallById
 } = require('./db');
 const { verifySignature } = require('./eddsa');
 const { registerUser, loginUser, requireAuth } = require('./auth');
@@ -37,6 +37,31 @@ const uploadPDFToCloudinary = (buffer, filename) => {
         );
         stream.end(buffer);
     });
+};
+
+// --- HELPER: EXTRACT CLOUDINARY PUBLIC ID ---
+const extractPublicId = (url) => {
+    if (!url || !url.includes('cloudinary.com')) return null;
+    try {
+        const parts = url.split('/upload/');
+        if (parts.length < 2) return null;
+        
+        let remaining = parts[1];
+        const subparts = remaining.split('/');
+        if (subparts[0].match(/^v\d+$/)) {
+            subparts.shift(); // Remove version part (e.g. v1783838886)
+        }
+        
+        remaining = subparts.join('/');
+        const dotIndex = remaining.lastIndexOf('.');
+        if (dotIndex !== -1) {
+            remaining = remaining.substring(0, dotIndex);
+        }
+        return remaining;
+    } catch (e) {
+        console.error("Failed to parse Cloudinary URL:", e);
+        return null;
+    }
 };
 
 // --- HELPER: SEND EMAIL VIA NODEMAILER (GMAIL SMTP) ---
@@ -192,6 +217,15 @@ router.post('/verify', async (req, res) => {
 
 router.delete('/feedback/:id', async (req, res) => {
     try {
+        const feedbackPhoto = await getFeedbackPhoto(req.params.id);
+        if (feedbackPhoto && feedbackPhoto.attachment) {
+            const publicId = extractPublicId(feedbackPhoto.attachment);
+            if (publicId) {
+                console.log(`[Cloudinary] Deleting feedback photo with public ID: ${publicId}`);
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
+
         await deleteFeedback(req.params.id);
         res.json({ message: "Record purged successfully" });
     } catch (err) {
@@ -438,6 +472,15 @@ router.put('/stalls/:id', async (req, res) => {
 
 router.delete('/stalls/:id', async (req, res) => {
     try {
+        const stall = await getStallById(req.params.id);
+        if (stall && stall.image) {
+            const publicId = extractPublicId(stall.image);
+            if (publicId) {
+                console.log(`[Cloudinary] Deleting stall image with public ID: ${publicId}`);
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
+
         await deleteStall(req.params.id);
         res.json({ success: true });
     } catch (err) {
