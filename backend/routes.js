@@ -403,7 +403,7 @@ router.post('/stalls', async (req, res) => {
         const newStall = await addStall(name, image || null, email || null, verificationToken);
 
         if (email) {
-            const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+            const baseUrl = process.env.BACKEND_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;
             const verifyUrl = `${baseUrl}/api/stalls/verify-email?token=${verificationToken}`;
             const htmlContent = getVerificationEmailTemplate(name, verifyUrl);
             
@@ -450,7 +450,7 @@ router.put('/stalls/:id', async (req, res) => {
         const updatedStall = await editStall(req.params.id, name, image || null, email || null, isVerified, verificationToken);
 
         if (emailChanged && email) {
-            const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+            const baseUrl = process.env.BACKEND_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;
             const verifyUrl = `${baseUrl}/api/stalls/verify-email?token=${verificationToken}`;
             const htmlContent = getVerificationEmailTemplate(name, verifyUrl);
             
