@@ -1211,6 +1211,7 @@ export default function AdminDashboard({ navigate }) {
             </div>
           </div>
         </div>
+      )}
       {/* ─── CUSTOM MODAL (CONFIRM & ALERT) ─── */}
       {modalState.isOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
