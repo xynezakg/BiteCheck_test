@@ -233,6 +233,11 @@ export default function LandingPage({ navigate }) {
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="main-container">
+        {error && (
+          <div style={{ backgroundColor: '#FEF2F2', color: '#EF4444', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 500, marginBottom: '24px', border: '1px solid #FCA5A5' }}>
+            {error}
+          </div>
+        )}
         
         {/* TOP LAYOUT: Feedback Trigger & Canteen Scorecard */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
@@ -443,7 +448,10 @@ export default function LandingPage({ navigate }) {
                 <div key={item.step} style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '24px', borderRadius: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
                     <div style={{ backgroundColor: colors.goldLight, color: colors.navy, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px' }}>{item.step}</div>
-                    <h4 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: colors.white }}>{item.title}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconComp size={18} color={colors.gold} />
+                      <h4 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: colors.white }}>{item.title}</h4>
+                    </div>
                   </div>
                   <p style={{ color: '#94A3B8', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
                 </div>
