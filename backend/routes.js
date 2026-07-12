@@ -8,7 +8,8 @@ const {
     addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
     getFeedbackPhoto,
     getAllStalls, addStall, deleteStall, editStall,
-    getStallByToken, verifyStallEmail, getStallById
+    getStallByToken, verifyStallEmail, getStallById,
+    getFeedbacksByStallName, deleteFeedbacksByStallName
 } = require('./db');
 const { verifySignature } = require('./eddsa');
 const { registerUser, loginUser, requireAuth } = require('./auth');
@@ -473,17 +474,42 @@ router.put('/stalls/:id', async (req, res) => {
 router.delete('/stalls/:id', async (req, res) => {
     try {
         const stall = await getStallById(req.params.id);
-        if (stall && stall.image) {
-            const publicId = extractPublicId(stall.image);
-            if (publicId) {
-                console.log(`[Cloudinary] Deleting stall image with public ID: ${publicId}`);
-                await cloudinary.uploader.destroy(publicId);
+        if (stall) {
+            // 1. Delete stall cover image from Cloudinary
+            if (stall.image) {
+                const publicId = extractPublicId(stall.image);
+                if (publicId) {
+                    console.log(`[Cloudinary] Deleting stall cover image: ${publicId}`);
+                    await cloudinary.uploader.destroy(publicId);
+                }
             }
+
+            // 2. Delete stall PDF evaluation report from Cloudinary (raw resource)
+            const reportPublicId = `ua_canteen/reports/Evaluation_Report_${stall.name.replace(/\s+/g, '_')}.pdf`;
+            console.log(`[Cloudinary] Deleting stall PDF report: ${reportPublicId}`);
+            await cloudinary.uploader.destroy(reportPublicId, { resource_type: 'raw' });
+
+            // 3. Delete all related feedback photos from Cloudinary
+            const feedbacks = await getFeedbacksByStallName(stall.name);
+            for (const f of feedbacks) {
+                if (f.attachment) {
+                    const feedbackPhotoPublicId = extractPublicId(f.attachment);
+                    if (feedbackPhotoPublicId) {
+                        console.log(`[Cloudinary] Deleting feedback photo: ${feedbackPhotoPublicId}`);
+                        await cloudinary.uploader.destroy(feedbackPhotoPublicId);
+                    }
+                }
+            }
+
+            // 4. Delete all related feedbacks from Neon
+            await deleteFeedbacksByStallName(stall.name);
         }
 
+        // 5. Delete the stall itself from Neon
         await deleteStall(req.params.id);
         res.json({ success: true });
     } catch (err) {
+        console.error("Cascade Delete Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });

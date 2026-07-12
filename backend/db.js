@@ -141,9 +141,25 @@ async function deleteStall(id) {
     await pool.query(`DELETE FROM stalls WHERE id = $1`, [id]);
 }
 
+async function getFeedbacksByStallName(stallName) {
+    const result = await pool.query(
+        `SELECT id, attachment FROM feedbacks WHERE comment LIKE $1`,
+        [`[Stall: ${stallName}]%`]
+    );
+    return result.rows;
+}
+
+async function deleteFeedbacksByStallName(stallName) {
+    await pool.query(
+        `DELETE FROM feedbacks WHERE comment LIKE $1`,
+        [`[Stall: ${stallName}]%`]
+    );
+}
+
 module.exports = {
     pool, addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
     getFeedbackPhoto,
     getAllStalls, addStall, editStall, deleteStall,
-    getStallByToken, verifyStallEmail, getStallById
+    getStallByToken, verifyStallEmail, getStallById,
+    getFeedbacksByStallName, deleteFeedbacksByStallName
 };
