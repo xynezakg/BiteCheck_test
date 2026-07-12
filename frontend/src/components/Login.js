@@ -18,7 +18,8 @@ export default function Login({ navigate }) {
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('student');
-  const [agreeTerms, setAgreeTerms] = useState(false); 
+  const [academicLevel, setAcademicLevel] = useState('');
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const colors = {
     navy: '#0C2340', 
@@ -53,18 +54,24 @@ export default function Login({ navigate }) {
           setLoading(false);
           return;
         }
+        if (role === 'student' && !academicLevel) {
+          setError('Please select your academic level to continue.');
+          setLoading(false);
+          return;
+        }
         if (!agreeTerms) {
           setError('You must agree to the Terms and Conditions to register.');
           setLoading(false);
           return;
         }
-        await registerUser({ ua_id: uaId, full_name: fullName, role, password });
+        await registerUser({ ua_id: uaId, full_name: fullName, role, password, academic_level: role === 'student' ? academicLevel : null });
         setIsLogin(true);
         setPassword('');
         setConfirmPassword('');
         setUaId('');
         setFullName('');
         setRole('student');
+        setAcademicLevel('');
         setAgreeTerms(false);
         setSuccessModal(true);
       }
@@ -219,19 +226,73 @@ export default function Login({ navigate }) {
                   <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>FULL NAME</label>
                   <input required type="text" placeholder="Maria Santos" value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
-                <div>
+                  <div>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>ACCOUNT ROLE</label>
-                  
-                  {/* 👉 FIX 2: Beautiful custom toggle buttons instead of ugly <select> native dropdown! */}
+
+                  {/* Role toggle buttons */}
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button type="button" onClick={() => setRole('student')} style={{ flex: 1, padding: '14px 10px', borderRadius: '8px', border: `1px solid ${role === 'student' ? colors.navy : colors.border}`, background: role === 'student' ? colors.navy : colors.bg, color: role === 'student' ? colors.white : colors.textMuted, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}>
+                    <button type="button" onClick={() => { setRole('student'); }} style={{ flex: 1, padding: '14px 10px', borderRadius: '8px', border: `1px solid ${role === 'student' ? colors.navy : colors.border}`, background: role === 'student' ? colors.navy : colors.bg, color: role === 'student' ? colors.white : colors.textMuted, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}>
                       Student
                     </button>
-                    <button type="button" onClick={() => setRole('staff')} style={{ flex: 1, padding: '14px 10px', borderRadius: '8px', border: `1px solid ${role === 'staff' ? colors.navy : colors.border}`, background: role === 'staff' ? colors.navy : colors.bg, color: role === 'staff' ? colors.white : colors.textMuted, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}>
+                    <button type="button" onClick={() => { setRole('staff'); setAcademicLevel(''); }} style={{ flex: 1, padding: '14px 10px', borderRadius: '8px', border: `1px solid ${role === 'staff' ? colors.navy : colors.border}`, background: role === 'staff' ? colors.navy : colors.bg, color: role === 'staff' ? colors.white : colors.textMuted, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}>
                       Staff / Faculty
                     </button>
                   </div>
                 </div>
+
+                {/* Academic Level — only for students */}
+                {role === 'student' && (
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '10px', display: 'block', letterSpacing: '0.05em' }}>
+                      ACADEMIC LEVEL <span style={{ color: '#EF4444' }}>*</span>
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {[
+                        { value: 'JHS', label: 'Junior High School (JHS)', sub: 'Grades 7–10 · High School Canteen' },
+                        { value: 'SHS', label: 'Senior High School (SHS)', sub: 'Grades 11–12 · High School Canteen' },
+                        { value: 'College', label: 'College', sub: 'Undergraduate Programs · College Canteen' },
+                      ].map(opt => {
+                        const isSelected = academicLevel === opt.value;
+                        return (
+                          <label
+                            key={opt.value}
+                            htmlFor={`level-${opt.value}`}
+                            style={{
+                              display: 'flex', alignItems: 'flex-start', gap: '12px',
+                              padding: '12px 14px', borderRadius: '8px', cursor: 'pointer',
+                              border: `1.5px solid ${isSelected ? colors.navy : colors.border}`,
+                              background: isSelected ? '#EFF3F8' : colors.white,
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              id={`level-${opt.value}`}
+                              name="academicLevel"
+                              value={opt.value}
+                              checked={isSelected}
+                              onChange={() => setAcademicLevel(opt.value)}
+                              style={{ marginTop: '3px', accentColor: colors.navy, width: '16px', height: '16px', flexShrink: 0 }}
+                            />
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: 600, color: isSelected ? colors.navy : colors.text, lineHeight: 1.3 }}>
+                                {opt.label}
+                              </div>
+                              <div style={{ fontSize: '12px', color: colors.textMuted, marginTop: '2px' }}>
+                                {opt.sub}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {!academicLevel && (
+                      <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: '6px', marginBottom: 0 }}>
+                        Required — determines which canteen stalls you can evaluate.
+                      </p>
+                    )}
+                  </div>
+                )}
               </>
             )}
 

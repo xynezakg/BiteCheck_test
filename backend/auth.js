@@ -9,21 +9,27 @@ const isValidUaId = (id) => /^\d{10}$/.test(id);
 
 // --- 1. REGISTER ENDPOINT ---
 const registerUser = async (req, res) => {
-    const { ua_id, full_name, role, password } = req.body;
-    
+    const { ua_id, full_name, role, password, academic_level } = req.body;
+
     // BACKEND VALIDATION: Enforce 10-digit rule
     if (!isValidUaId(ua_id) && role !== 'admin') { // (Allowing admins to have custom IDs if needed, otherwise it blocks students/staff)
         return res.status(400).json({ error: 'Invalid format. UA ID must be exactly 10 digits with no dashes.' });
     }
 
+    // Validate academic_level for students (optional for staff/admin)
+    const validLevels = ['JHS', 'SHS', 'College'];
+    if (role === 'student' && (!academic_level || !validLevels.includes(academic_level))) {
+        return res.status(400).json({ error: 'Academic level is required for students. Please select JHS, SHS, or College.' });
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const result = await pool.query(
-            'INSERT INTO users (ua_id, full_name, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, ua_id, full_name, role',
-            [ua_id, full_name, role, hashedPassword]
+            'INSERT INTO users (ua_id, full_name, role, password_hash, academic_level) VALUES ($1, $2, $3, $4, $5) RETURNING id, ua_id, full_name, role, academic_level',
+            [ua_id, full_name, role, hashedPassword, academic_level || null]
         );
-        
+
         res.json({ message: 'User created successfully', user: result.rows[0] });
     } catch (error) {
         console.error("Register error:", error);
@@ -50,15 +56,15 @@ const loginUser = async (req, res) => {
         if (!validPassword) return res.status(401).json({ error: 'Invalid UA ID or Password' });
 
         const token = jwt.sign(
-            { id: user.id, ua_id: user.ua_id, role: user.role, full_name: user.full_name },
+            { id: user.id, ua_id: user.ua_id, role: user.role, full_name: user.full_name, academic_level: user.academic_level || null },
             JWT_SECRET,
-            { expiresIn: '8h' } 
+            { expiresIn: '8h' }
         );
 
-        res.json({ 
-            message: 'Login successful', 
-            token, 
-            user: { ua_id: user.ua_id, full_name: user.full_name, role: user.role } 
+        res.json({
+            message: 'Login successful',
+            token,
+            user: { ua_id: user.ua_id, full_name: user.full_name, role: user.role, academic_level: user.academic_level || null }
         });
     } catch (error) {
         console.error("Login error:", error);

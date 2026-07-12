@@ -387,7 +387,7 @@ const getVerificationEmailTemplate = (name, verifyUrl) => `
 
 router.post('/stalls', async (req, res) => {
     try {
-        let { name, image, email } = req.body;
+        let { name, image, email, canteen_group } = req.body;
         if (!name) return res.status(400).json({ error: "Stall name is required" });
 
         if (image && !image.startsWith('http')) {
@@ -400,7 +400,7 @@ router.post('/stalls', async (req, res) => {
             verificationToken = crypto.randomBytes(20).toString('hex');
         }
 
-        const newStall = await addStall(name, image || null, email || null, verificationToken);
+        const newStall = await addStall(name, image || null, email || null, verificationToken, canteen_group || null);
 
         if (email) {
             const baseUrl = process.env.BACKEND_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;
@@ -426,7 +426,7 @@ router.post('/stalls', async (req, res) => {
 
 router.put('/stalls/:id', async (req, res) => {
     try {
-        let { name, image, email } = req.body;
+        let { name, image, email, canteen_group } = req.body;
         if (!name) return res.status(400).json({ error: "Stall name is required" });
 
         if (image && !image.startsWith('http')) {
@@ -447,7 +447,7 @@ router.put('/stalls/:id', async (req, res) => {
             isVerified = false;
         }
 
-        const updatedStall = await editStall(req.params.id, name, image || null, email || null, isVerified, verificationToken);
+        const updatedStall = await editStall(req.params.id, name, image || null, email || null, isVerified, verificationToken, canteen_group || null);
 
         if (emailChanged && email) {
             const baseUrl = process.env.BACKEND_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;

@@ -57,11 +57,11 @@ export const fetchStalls = async () => {
     return response.json();
 };
 
-export const addStall = async (name, image, email) => {
+export const addStall = async (name, image, email, canteen_group) => {
     const response = await fetch(`${API_URL}/stalls`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, image, email })
+        body: JSON.stringify({ name, image, email, canteen_group })
     });
     if (!response.ok) {
         const err = await response.json();
@@ -70,11 +70,11 @@ export const addStall = async (name, image, email) => {
     return response.json();
 };
 
-export const editStall = async (id, name, image, email) => {
+export const editStall = async (id, name, image, email, canteen_group) => {
     const response = await fetch(`${API_URL}/stalls/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, image, email })
+        body: JSON.stringify({ name, image, email, canteen_group })
     });
     if (!response.ok) {
         const err = await response.json();
