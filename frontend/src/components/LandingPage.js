@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchStalls, getAllFeedbacks } from '../api';
 import { ClipboardEdit, LogIn, ArrowRight, ShieldCheck, Search, Star, MessageSquare, Award, Clock, BookOpen, UtensilsCrossed, X } from 'lucide-react';
+import bgMain from '../Background_img/Screenshot 2026-03-28 165930.png';
 
 export default function LandingPage({ navigate }) {
   const [stalls, setStalls] = useState([]);
@@ -159,9 +160,7 @@ export default function LandingPage({ navigate }) {
         .header-pad { padding: 18px 80px; }
         .logo-img { height: 48px; }
         .univ-text { font-size: 20px; display: block; }
-        .hero-banner { display: flex; align-items: center; justify-content: space-between; gap: 64px; max-width: 1200px; margin: 0 auto; padding: 80px 40px; box-sizing: border-box; }
-        .hero-left { flex: 1.1; display: flex; justify-content: center; align-items: center; position: relative; }
-        .hero-right { flex: 0.9; text-align: left; }
+        .hero-banner { text-align: center; padding: 80px 20px; box-sizing: border-box; }
         .hero-h2 { font-size: 48px; line-height: 1.15; }
         .hero-p { font-size: 17px; }
         .main-container { max-width: 1200px; margin: 0 auto 100px; width: 100%; padding: 0 40px; box-sizing: border-box; }
@@ -227,10 +226,6 @@ export default function LandingPage({ navigate }) {
 
         @media (max-width: 1024px) {
           .header-pad { padding: 18px 40px !important; }
-          .hero-banner { flex-direction: column-reverse; padding: 60px 40px !important; gap: 48px !important; }
-          .hero-left { width: 100%; max-width: 500px; }
-          .hero-right { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; }
-          .hero-p { max-width: 550px; }
           .main-container { padding: 0 40px !important; }
         }
 
@@ -280,67 +275,25 @@ export default function LandingPage({ navigate }) {
         </div>
       </header>
 
-      {/* ─── SAAS TWO-COLUMN HERO SECTION ─── */}
-      <div className="hero-banner animate-fadeup" style={{ position: 'relative' }}>
-        
-        {/* Left Side: Modern SaaS Illustration Assets */}
-        <div className="hero-left">
-          <div className="animate-float" style={{ position: 'relative', width: '100%', maxWidth: '460px', display: 'flex', justifyContent: 'center' }}>
-            <img 
-              src="/canteen_hero_illustration.png" 
-              alt="Canteen Feedback Illustration" 
-              style={{ 
-                width: '100%', 
-                height: 'auto', 
-                borderRadius: '24px', 
-                boxShadow: '0 25px 60px -15px rgba(12, 35, 64, 0.15)',
-                border: `1px solid rgba(12, 35, 64, 0.05)`
-              }} 
-            />
-            {/* Small decorative floating circle */}
-            <div style={{ position: 'absolute', top: '-15px', right: '-15px', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: colors.goldLight, zIndex: -1, opacity: 0.8 }} />
-            <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'rgba(12, 35, 64, 0.04)', zIndex: -1 }} />
-          </div>
-        </div>
-
-        {/* Right Side: Branded Copy & Call to Action */}
-        <div className="hero-right">
+      {/* ─── HERO BANNER WITH ORIGINAL IMAGE BACKGROUND & BLUE OVERLAY ─── */}
+      <div className="hero-banner animate-fadeup" style={{ 
+        backgroundImage: `url("${bgMain}")`, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        position: 'relative',
+        borderBottom: `4px solid ${colors.gold}`
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.85)', zIndex: 0 }}></div>
+        <div style={{ position: 'relative', zIndex: 1, color: colors.white, textAlign: 'center', maxWidth: '800px', margin: '0 auto', padding: '40px 0' }}>
           <span style={{ fontSize: '12px', fontWeight: 800, color: colors.gold, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'block', marginBottom: '14px' }}>
             SECURE PORTAL
           </span>
-          <h2 className="hero-h2" style={{ fontWeight: 800, margin: '0 0 20px 0', color: colors.navy, letterSpacing: '-0.03em' }}>
+          <h2 className="hero-h2" style={{ fontWeight: 800, margin: '0 0 20px 0', color: colors.white, letterSpacing: '-0.03em' }}>
             Canteen Evaluation System
           </h2>
-          <p className="hero-p" style={{ fontWeight: 400, lineHeight: 1.62, margin: '0 0 36px 0', color: colors.textMuted }}>
+          <p className="hero-p" style={{ fontWeight: 400, lineHeight: 1.62, margin: 0, color: '#CBD5E1' }}>
             A secure platform to share your dining experience. All submissions are protected by Ed25519 cryptography.
           </p>
-
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%', justifyContent: 'inherit' }}>
-            <button 
-              onClick={() => navigate('student-login')}
-              className="btn-lift"
-              style={{ 
-                backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '16px 32px', 
-                fontSize: '15px', fontWeight: 600, borderRadius: '30px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                fontFamily: 'inherit'
-              }}
-            >
-              Start Evaluation <ArrowRight size={18} />
-            </button>
-            <button 
-              onClick={() => navigate('verify_receipt')}
-              className="btn-lift"
-              style={{ 
-                backgroundColor: colors.white, color: colors.navy, border: `1.5px solid ${colors.navy}`, padding: '16px 30px', 
-                fontSize: '15px', fontWeight: 600, borderRadius: '30px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                fontFamily: 'inherit'
-              }}
-            >
-              <ShieldCheck size={18} /> Verify Receipt
-            </button>
-          </div>
         </div>
       </div>
 
@@ -362,12 +315,39 @@ export default function LandingPage({ navigate }) {
             <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '50%', color: colors.navy, marginBottom: '20px' }}>
               <ClipboardEdit size={28} />
             </div>
+            
             <h3 style={{ margin: 0, color: colors.navy, fontWeight: 800, fontSize: '20px', letterSpacing: '-0.02em', marginBottom: '10px' }}>
               Submit Your Feedback
             </h3>
-            <p style={{ color: colors.textMuted, fontSize: '14px', lineHeight: 1.6, marginBottom: '0', maxWidth: '300px' }}>
+            
+            <p style={{ color: colors.textMuted, fontSize: '14px', lineHeight: 1.6, marginBottom: '28px', maxWidth: '300px' }}>
               Rate your meal and help us improve campus dining. Your review is digitally signed for authenticity.
             </p>
+
+            <button 
+              onClick={() => navigate('student-login')}
+              className="btn-lift"
+              style={{ 
+                backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '14px 28px', 
+                fontSize: '14px', fontWeight: 600, borderRadius: '30px', cursor: 'pointer', width: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(12, 35, 64, 0.15)', marginBottom: '12px'
+              }}
+            >
+              Start Evaluation <ArrowRight size={16} />
+            </button>
+            <button 
+              onClick={() => navigate('verify_receipt')}
+              style={{ 
+                background: 'none', border: 'none', color: colors.navy, fontSize: '13px', fontWeight: 600, 
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.8,
+                transition: 'opacity 0.2s', fontFamily: 'inherit'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = 0.8}
+            >
+              <ShieldCheck size={16} /> Verify your receipt signature
+            </button>
           </div>
 
           {/* Canteen Category Scorecard Widget */}
