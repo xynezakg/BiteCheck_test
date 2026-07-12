@@ -131,3 +131,9 @@ export const quarantineFeedback = async (id) => {
     const response = await fetch(`${API_URL}/feedback/${id}/quarantine`, { method: 'PUT' });
     return response.json();
 };
+
+export const getUserDemographics = async () => {
+    const response = await fetch(`${API_URL}/admin/user-demographics`);
+    if (!response.ok) throw new Error('Failed to fetch user demographics');
+    return response.json();
+};

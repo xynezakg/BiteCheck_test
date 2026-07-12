@@ -101,6 +101,24 @@ router.get('/users/verify-email', async (req, res) => {
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 
+// --- ADMIN USER DEMOGRAPHICS ROUTE ---
+router.get('/admin/user-demographics', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                COALESCE(academic_level, 'Unspecified') as level,
+                COUNT(*) as count
+            FROM users
+            WHERE role = 'student'
+            GROUP BY academic_level
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Failed to fetch demographics:", err);
+        res.status(500).json({ error: 'Server error fetching user demographics' });
+    }
+});
+
 // --- SECURE FEEDBACK ROUTE ---
 router.post('/feedback', requireAuth, async (req, res) => {
     let { rating, comment, attachment, signature, public_key } = req.body;

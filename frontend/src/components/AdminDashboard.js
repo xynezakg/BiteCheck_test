@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls } from "../api";
+import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
@@ -52,6 +52,7 @@ export default function AdminDashboard({ navigate }) {
   // State for the Stall Filter dropdown
   const [dashboardStallFilter, setDashboardStallFilter] = useState("All");
   const [stallsList, setStallsList] = useState([]);
+  const [demographics, setDemographics] = useState([]);
 
   const isAuditingRef = useRef(isAuditing);
   useEffect(() => { isAuditingRef.current = isAuditing; }, [isAuditing]);
@@ -91,6 +92,7 @@ export default function AdminDashboard({ navigate }) {
 
     // Fetches the list of stalls for the dropdown filter!
     fetchStalls().then(data => setStallsList(data)).catch(console.error);
+    getUserDemographics().then(data => setDemographics(data)).catch(console.error);
 
     fetchAndAudit();
     const intervalId = setInterval(fetchAndAudit, 3000);
@@ -994,6 +996,39 @@ export default function AdminDashboard({ navigate }) {
               </div>
 
             </div>
+
+            {/* User Registration Demographics Grid */}
+            <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginTop: '24px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', marginBottom: '24px' }}>REGISTERED STUDENT DEMOGRAPHICS</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+                {['JHS', 'SHS', 'College'].map(level => {
+                  const dataObj = demographics.find(d => (d.level || '').toUpperCase() === level.toUpperCase()) || { count: 0 };
+                  const countVal = parseInt(dataObj.count) || 0;
+                  
+                  // Calculate total registered
+                  const totalRegistered = demographics.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0);
+                  const percentage = totalRegistered > 0 ? ((countVal / totalRegistered) * 100).toFixed(1) : "0.0";
+                  
+                  // Color codes for each level
+                  const levelColors = {
+                    JHS: { bg: '#EFF6FF', text: '#1E40AF', label: 'Junior High School' },
+                    SHS: { bg: '#FDF2F8', text: '#9D174D', label: 'Senior High School' },
+                    College: { bg: '#ECFDF5', text: '#065F46', label: 'College Level' }
+                  };
+                  
+                  const styleMeta = levelColors[level] || { bg: '#F1F5F9', text: '#334155', label: level };
+
+                  return (
+                    <div key={level} style={{ backgroundColor: styleMeta.bg, padding: '24px', borderRadius: '12px', border: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: styleMeta.text, letterSpacing: '0.05em' }}>{styleMeta.label}</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, color: colors.navy }}>{countVal} <span style={{ fontSize: '14px', fontWeight: 500, color: colors.textMuted }}>Registered</span></div>
+                      <div style={{ fontSize: '13px', color: colors.textMuted }}>Makes up <strong>{percentage}%</strong> of student signups</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         )}
 
