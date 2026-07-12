@@ -184,7 +184,23 @@ export default function StallManager() {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'start' }}>
+    <div className="stall-manager-grid">
+      {/* ─── RESPONSIVE LAYOUT STYLES ─── */}
+      <style>{`
+        .stall-manager-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
+          align-items: start;
+        }
+
+        @media (max-width: 992px) {
+          .stall-manager-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+          }
+        }
+      `}</style>
 
       {/* ─── LEFT COLUMN: FORM ─── */}
       <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>

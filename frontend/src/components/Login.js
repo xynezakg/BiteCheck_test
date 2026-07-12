@@ -19,7 +19,7 @@ export default function Login({ navigate }) {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('student');
   const [agreeTerms, setAgreeTerms] = useState(false); 
-
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const colors = {
     navy: '#0C2340', 
     gold: '#E5A823', 
@@ -180,8 +180,7 @@ export default function Login({ navigate }) {
         
         <div className="form-box" style={{ 
           width: '100%', maxWidth: '440px', backgroundColor: colors.white, borderRadius: '16px', 
-          boxShadow: '0 20px 50px rgba(0,0,0,0.1)', border: `1px solid ${colors.border}`, 
-          borderTop: `4px solid ${colors.gold}`, borderBottom: `4px solid ${colors.red}` 
+          boxShadow: '0 20px 50px rgba(0,0,0,0.1)', border: `1px solid ${colors.border}` 
         }}>
           
           <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
@@ -273,28 +272,26 @@ export default function Login({ navigate }) {
                   <span style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px', display: 'block' }}>Passwords do not match</span>
                 )}
                 
-                {/* Terms and Conditions Widget */}
-                <div style={{ marginTop: '20px', border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '12px', backgroundColor: colors.bg, textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5, marginBottom: '12px' }}>
-                    <strong style={{ color: colors.navy }}>Introduction &amp; Acceptance of Terms:</strong>
-                    <ul style={{ margin: '6px 0 0 0', paddingLeft: '16px' }}>
-                      <li style={{ marginBottom: '4px' }}><strong style={{ color: colors.navy }}>Acceptance:</strong> By accessing or using our platform, you agree to be bound by these Terms and Conditions. If you do not agree, you must immediately cease using our services.</li>
-                      <li><strong style={{ color: colors.navy }}>Modifications:</strong> We reserve the right to modify these terms at any time; continued use constitutes acceptance of the updated terms.</li>
-                    </ul>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      required 
-                      type="checkbox" 
-                      id="agreeTerms" 
-                      checked={agreeTerms} 
-                      onChange={(e) => setAgreeTerms(e.target.checked)} 
-                      style={{ cursor: 'pointer', margin: 0 }} 
-                    />
-                    <label htmlFor="agreeTerms" style={{ fontSize: '12px', fontWeight: 600, color: colors.navy, cursor: 'pointer', userSelect: 'none' }}>
-                      I agree to the Terms and Conditions
-                    </label>
-                  </div>
+                {/* Terms and Conditions Checkbox */}
+                <div style={{ marginTop: '16px', display: 'flex', gap: '10px', alignItems: 'center', textAlign: 'left' }}>
+                  <input 
+                    required 
+                    type="checkbox" 
+                    id="agreeTerms" 
+                    checked={agreeTerms} 
+                    onChange={(e) => setAgreeTerms(e.target.checked)} 
+                    style={{ cursor: 'pointer', margin: 0, width: '16px', height: '16px', flexShrink: 0 }} 
+                  />
+                  <label htmlFor="agreeTerms" style={{ fontSize: '13px', fontWeight: 500, color: colors.text, cursor: 'pointer', userSelect: 'none', lineHeight: '1.4', textTransform: 'none', marginTop: 0 }}>
+                    I agree to the{' '}
+                    <button 
+                      type="button" 
+                      onClick={() => setShowTermsModal(true)} 
+                      style={{ background: 'none', border: 'none', padding: 0, color: colors.gold, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}
+                    >
+                      Terms and Conditions
+                    </button>
+                  </label>
                 </div>
               </div>
             )}
@@ -346,6 +343,61 @@ export default function Login({ navigate }) {
             >
               Try Again
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, fontFamily: 'inherit', backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', maxWidth: '500px', width: '90%', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)', border: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 700, color: colors.navy, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={24} color={colors.gold} /> Terms and Conditions
+            </h3>
+            
+            <div style={{ maxHeight: '300px', overflowY: 'auto', textAlign: 'left', border: `1px solid ${colors.border}`, padding: '16px', borderRadius: '8px', marginBottom: '24px', fontSize: '13px', lineHeight: '1.6', color: colors.text }}>
+              <p style={{ marginTop: 0, marginBottom: '12px', fontWeight: 600, color: colors.navy }}>Introduction &amp; Acceptance of Terms:</p>
+              <p style={{ marginBottom: '16px' }}>By accessing or using our platform, you agree to be bound by these Terms and Conditions. If you do not agree, you must immediately cease using our services.</p>
+              
+              <p style={{ marginBottom: '12px', fontWeight: 600, color: colors.navy }}>Modifications:</p>
+              <p style={{ marginBottom: '16px' }}>We reserve the right to modify these terms at any time; continued use constitutes acceptance of the updated terms.</p>
+              
+              <p style={{ marginBottom: '12px', fontWeight: 600, color: colors.navy }}>Cryptographic Signatures:</p>
+              <p style={{ marginBottom: '16px' }}>Every feedback submission is cryptographically signed using Ed25519 technology in the student's browser. This process creates a secure, tamper-proof digital signature verifying feedback authenticity.</p>
+              
+              <p style={{ marginBottom: '12px', fontWeight: 600, color: colors.navy }}>Data Integrity:</p>
+              <p style={{ marginBottom: '16px' }}>Users agree not to attempt to manipulate, inject, or tamper with the cryptographic seals or feedback verification data.</p>
+              
+              <p style={{ marginBottom: '12px', fontWeight: 600, color: colors.navy }}>Privacy Policy:</p>
+              <p style={{ marginBottom: 0 }}>Your identity is secure and protected according to the university guidelines.</p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setAgreeTerms(false);
+                  setShowTermsModal(false);
+                }}
+                style={{ flex: 1, padding: '12px', backgroundColor: 'transparent', color: colors.navy, border: `1.5px solid ${colors.navy}`, borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'background-color 0.2s', fontFamily: 'inherit' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Decline
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setAgreeTerms(true);
+                  setShowTermsModal(false);
+                }}
+                style={{ flex: 1, padding: '12px', backgroundColor: colors.navy, color: colors.white, border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'opacity 0.2s', fontFamily: 'inherit' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                I Agree
+              </button>
+            </div>
           </div>
         </div>
       )}

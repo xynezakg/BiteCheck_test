@@ -58,15 +58,15 @@ export default function FeedbackForm({ navigate }) {
           // 👉 NEW: QR AUTO-ROUTING LOGIC
           const params = new URLSearchParams(window.location.search);
           const autoStall = params.get('stall');
-          
+
           if (autoStall) {
-             const matched = verifiedStalls.find(s => s.name.toLowerCase() === autoStall.toLowerCase());
-             if (matched) {
-                setSelectedStall(matched.name);
-                setStep(2); // 🔥 Instantly skip step 1 for QR code users to maximize UX speed!
-             } else {
-               setSelectedStall("General Feedback");
-             }
+            const matched = verifiedStalls.find(s => s.name.toLowerCase() === autoStall.toLowerCase());
+            if (matched) {
+              setSelectedStall(matched.name);
+              setStep(2); // 🔥 Instantly skip step 1 for QR code users to maximize UX speed!
+            } else {
+              setSelectedStall("General Feedback");
+            }
           } else if (data.length === 0) {
             setSelectedStall("General Feedback");
           }
@@ -150,7 +150,7 @@ export default function FeedbackForm({ navigate }) {
   const handleLogout = () => {
     localStorage.removeItem('ua_token');
     localStorage.removeItem('ua_user');
-    window.location.href = '/'; 
+    window.location.href = '/';
   };
 
   const handleImageUpload = (e) => {
@@ -282,7 +282,7 @@ export default function FeedbackForm({ navigate }) {
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: '340px',
         backgroundImage: `url("${bgMain}")`, backgroundSize: 'cover', backgroundPosition: 'center',
-        borderBottom: `4px solid ${colors.gold}`, zIndex: 0
+        borderBottom: 'none', zIndex: 0
       }}>
         <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.85)' }}></div>
       </div>
@@ -584,39 +584,39 @@ export default function FeedbackForm({ navigate }) {
                   <button
                     type="button"
                     disabled={form.comment.length < 10}
-                    style={{ 
-                      padding: '16px 40px', 
-                      fontSize: '15px', 
-                      fontWeight: 600, 
-                      backgroundColor: form.comment.length < 10 ? '#CBD5E1' : colors.navy, 
-                      color: colors.white, 
-                      border: 'none', 
-                      borderRadius: '8px', 
-                      cursor: form.comment.length < 10 ? 'not-allowed' : 'pointer', 
-                      transition: 'all 0.2s', 
-                      boxShadow: form.comment.length < 10 ? 'none' : '0 4px 12px rgba(12, 35, 64, 0.2)', 
-                      fontFamily: 'inherit', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '8px' 
+                    style={{
+                      padding: '16px 40px',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      backgroundColor: form.comment.length < 10 ? '#CBD5E1' : colors.navy,
+                      color: colors.white,
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: form.comment.length < 10 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: form.comment.length < 10 ? 'none' : '0 4px 12px rgba(12, 35, 64, 0.2)',
+                      fontFamily: 'inherit',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
-                    onMouseEnter={(e) => { 
+                    onMouseEnter={(e) => {
                       if (form.comment.length >= 10) {
-                        e.currentTarget.style.backgroundColor = '#17365C'; 
-                        e.currentTarget.style.transform = 'translateY(-2px)'; 
+                        e.currentTarget.style.backgroundColor = '#17365C';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
                       }
                     }}
-                    onMouseLeave={(e) => { 
+                    onMouseLeave={(e) => {
                       if (form.comment.length >= 10) {
-                        e.currentTarget.style.backgroundColor = colors.navy; 
-                        e.currentTarget.style.transform = 'none'; 
+                        e.currentTarget.style.backgroundColor = colors.navy;
+                        e.currentTarget.style.transform = 'none';
                       }
                     }}
-                    onClick={() => { 
+                    onClick={() => {
                       if (form.comment.length < 10) return;
-                      setErrorMessage(""); 
-                      setStatus("idle"); 
-                      setStep(3); 
+                      setErrorMessage("");
+                      setStatus("idle");
+                      setStep(3);
                     }}
                   >
                     Review Feedback <ArrowRight size={18} />
@@ -721,7 +721,7 @@ export default function FeedbackForm({ navigate }) {
                 <h3 style={{ fontSize: '24px', fontWeight: 700, color: colors.navy, marginBottom: '12px', letterSpacing: '-0.02em' }}>Securing Data Payload</h3>
                 <div style={{ backgroundColor: colors.white, color: colors.navy, padding: '16px 20px', borderRadius: '12px', fontFamily: 'monospace', fontSize: '12px', fontWeight: '500', width: '100%', maxWidth: '340px', textAlign: 'center', border: `1px solid ${colors.border}`, boxShadow: '0 8px 24px rgba(12, 35, 64, 0.08)', wordBreak: 'break-word', boxSizing: 'border-box', margin: '0 auto' }}>
                   <span style={{ animation: 'pulse 1.5s infinite' }}>
-                    <strong style={{ color: colors.gold, marginRight: '6px' }}>&gt;</strong> 
+                    <strong style={{ color: colors.gold, marginRight: '6px' }}>&gt;</strong>
                     {signMessage}
                   </span>
                 </div>

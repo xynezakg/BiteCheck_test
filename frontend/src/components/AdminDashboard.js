@@ -14,11 +14,12 @@ export default function AdminDashboard({ navigate }) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [verifyState, setVerifyState] = useState({});
   const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [fullScreenImage, setFullScreenImage] = useState(null);
   const [isAuditing, setIsAuditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-   const [traceModal, setTraceModal] = useState(null);
+  const [traceModal, setTraceModal] = useState(null);
   const [traceStatus, setTraceStatus] = useState('loading');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -363,7 +364,7 @@ export default function AdminDashboard({ navigate }) {
     const isActive = activeMenu === id;
     return (
       <div
-        onClick={() => setActiveMenu(id)}
+        onClick={() => { setActiveMenu(id); setIsSidebarOpen(false); }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px',
           background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent', borderRadius: '8px',
@@ -411,25 +412,199 @@ export default function AdminDashboard({ navigate }) {
   );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: colors.bg, fontFamily: modernFont }}>
+    <div className="admin-layout">
 
+      {/* ─── RESPONSIVE LAYOUT STYLES ─── */}
       <style>{`
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
+        /* Desktop Layout */
+        .admin-layout {
+          display: flex;
+          min-height: 100vh;
+          background-color: ${colors.bg};
+          font-family: ${modernFont};
+          position: relative;
+        }
+        .admin-sidebar {
+          width: 280px;
+          background-color: ${colors.navy};
+          color: ${colors.white};
+          padding: 40px 24px;
+          display: flex;
+          flex-direction: column;
+          border-right: 4px solid ${colors.gold};
+          flex-shrink: 0;
+          box-sizing: border-box;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 100;
+        }
+        .admin-main {
+          flex: 1;
+          padding: 48px 60px;
+          overflow-y: auto;
+          box-sizing: border-box;
+          min-width: 0;
+        }
+        .mobile-header {
+          display: none;
+        }
+        .sidebar-toggle-btn {
+          display: none;
+        }
+
+        /* Chart/Dashboard Grids default */
+        .dashboard-charts-grid {
+          display: grid;
+          grid-template-columns: 3fr 2fr;
+          gap: 24px;
+          margin-bottom: 40px;
+        }
+        .dashboard-analytics-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 40px;
+        }
+        .pie-chart-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          gap: 16px;
+        }
+        .ranking-row {
+          display: flex;
+          align-items: center;
+          padding: 20px 24px;
+          background-color: ${colors.white};
+          border-radius: 16px;
+          border: 1px solid ${colors.border};
+          box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+          gap: 24px;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.2s;
+          cursor: default;
+        }
+        .ranking-row-actions {
+          margin-right: 16px;
+        }
+
+        /* Mobile & Tablet Responsiveness */
+        @media (max-width: 992px) {
+          .admin-layout {
+            flex-direction: column;
+          }
+          .admin-sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 280px;
+            transform: translateX(-100%);
+            box-shadow: 8px 0 30px rgba(0,0,0,0.15);
+            padding: 32px 24px;
+            border-right: 4px solid ${colors.gold};
+          }
+          .admin-sidebar.open {
+            transform: translateX(0);
+          }
+          .admin-main {
+            padding: 32px 20px !important;
+          }
+          .mobile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: ${colors.navy};
+            color: ${colors.white};
+            padding: 0 20px;
+            border-bottom: 3px solid ${colors.gold};
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-sizing: border-box;
+            height: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          }
+          .sidebar-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: ${colors.white};
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+          }
+          .sidebar-toggle-btn:active {
+            background: rgba(255,255,255,0.15);
+          }
+          .dashboard-charts-grid,
+          .dashboard-analytics-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+          }
+          .ranking-row {
+            flex-direction: column !important;
+            align-items: center !important;
+            padding: 24px 16px !important;
+            text-align: center !important;
+            gap: 16px !important;
+          }
+          .ranking-row-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .ranking-row-actions {
+            margin-right: 0 !important;
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .ranking-row-score {
+            width: 100% !important;
+            align-items: center !important;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .pie-chart-grid {
+            grid-template-columns: 1fr !important;
+            justify-items: center;
+            gap: 24px !important;
+          }
+        }
       `}</style>
 
+      {/* ─── MOBILE STICKY HEADER ─── */}
+      <div className="mobile-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/ua-logo.png" alt="UA Logo" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+          <div>
+            <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: colors.white }}>UA <span style={{ color: colors.gold }}>Canteen</span></h2>
+          </div>
+        </div>
+        <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          <svg style={{ width: '20px', height: '20px', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} viewBox="0 0 24 24">
+            {isSidebarOpen ? (
+              <path d="M18 6L6 18M6 6l12 12" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
       {/* ─── SIDEBAR ─── */}
-      <div style={{
-        width: '280px',
-        backgroundColor: colors.navy,
-        color: colors.white,
-        padding: '40px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: `4px solid ${colors.gold}`
-      }}>
+      <div className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
           <img src="/ua-logo.png" alt="UA Logo" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)' }} />
           <div>
@@ -472,7 +647,7 @@ export default function AdminDashboard({ navigate }) {
       </div>
 
       {/* ─── MAIN CONTENT ─── */}
-      <div style={{ flex: 1, padding: '48px 60px', overflowY: 'auto' }}>
+      <div className="admin-main">
 
         {/* ---------------- VIEW 0: RANKINGS ---------------- */}
         {activeMenu === "ranking" && (
@@ -536,7 +711,7 @@ export default function AdminDashboard({ navigate }) {
                   validScoreCount: validCount
                 };
               }).filter(s => s.total > 0).sort((a, b) => b.avg - a.avg).map((stall, idx) => (
-                <div key={stall.id} style={{ display: 'flex', alignItems: 'center', padding: '20px 24px', backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 8px 20px rgba(0,0,0,0.03)', gap: '24px', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                <div key={stall.id} className="ranking-row" onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
 
                   {/* Rank Indicator */}
                   <div style={{ width: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -558,8 +733,8 @@ export default function AdminDashboard({ navigate }) {
                   </div>
 
                   {/* Stall Details */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <div className="ranking-row-details" style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       <h3 style={{ margin: 0, fontSize: '20px', color: colors.navy, fontWeight: 700 }}>{stall.name}</h3>
                       {idx === 0 && rankingFilter === "Overall" && <span style={{ backgroundColor: 'rgba(229,168,35,0.1)', color: colors.gold, fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>OVERALL BEST</span>}
                       {idx === 0 && rankingFilter !== "Overall" && <span style={{ backgroundColor: 'rgba(56,142,60,0.1)', color: colors.success, fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>#1 IN {rankingFilter.toUpperCase()}</span>}
@@ -572,7 +747,8 @@ export default function AdminDashboard({ navigate }) {
                   {/* Action Button */}
                   <button
                     onClick={() => window.open(`${API_URL}/reports/stall/${stall.id}`, '_blank')}
-                    style={{ background: 'transparent', border: `1px solid ${colors.border}`, color: colors.navy, padding: '10px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', marginRight: '16px' }}
+                    className="ranking-row-actions"
+                    style={{ background: 'transparent', border: `1px solid ${colors.border}`, color: colors.navy, padding: '10px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.color = colors.white; }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.navy; }}
                   >
@@ -580,7 +756,7 @@ export default function AdminDashboard({ navigate }) {
                   </button>
 
                   {/* Score & Visual Bar */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '140px' }}>
+                  <div className="ranking-row-score" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '140px' }}>
                     <div style={{ fontSize: '32px', fontWeight: 800, color: colors.navy, display: 'flex', alignItems: 'baseline', gap: '4px', letterSpacing: '-0.02em', lineHeight: 1 }}>
                       {stall.avg.toFixed(1)} <span style={{ fontSize: '16px', color: colors.textMuted, fontWeight: 600 }}>/ 5</span>
                     </div>
@@ -668,13 +844,13 @@ export default function AdminDashboard({ navigate }) {
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
 
-              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, borderTop: `4px solid ${colors.navy}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
+              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '13px', color: colors.textMuted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '12px' }}>VERIFIED RECORDS</div>
                 <div style={{ fontSize: '36px', fontWeight: 700, color: colors.navy, lineHeight: 1 }}>{total}</div>
                 <div style={{ fontSize: '13px', color: colors.textMuted, marginTop: '8px' }}>Safe cryptographic submissions</div>
               </div>
 
-              <div className="card-hover" style={{ backgroundColor: activeBreachCount > 0 ? colors.dangerBg : colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${activeBreachCount > 0 ? colors.danger : colors.border}`, borderTop: `4px solid ${activeBreachCount > 0 ? colors.danger : colors.success}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
+              <div className="card-hover" style={{ backgroundColor: activeBreachCount > 0 ? colors.dangerBg : colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${activeBreachCount > 0 ? colors.danger : colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '13px', color: activeBreachCount > 0 ? colors.danger : colors.textMuted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '12px' }}>SYSTEM INTEGRITY</div>
                 <div style={{ fontSize: '28px', fontWeight: 700, color: activeBreachCount > 0 ? colors.danger : colors.success, display: 'flex', alignItems: 'center', gap: '12px', lineHeight: 1 }}>
                   {activeBreachCount > 0 ? <><ShieldAlert size={28} /> ISOLATED</> : <><ShieldCheck size={28} /> SECURE</>}
@@ -684,7 +860,7 @@ export default function AdminDashboard({ navigate }) {
                 </div>
               </div>
 
-              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, borderTop: `4px solid ${colors.gold}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
+              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '13px', color: colors.textMuted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '12px' }}>AVERAGE RATING</div>
                 <div style={{ fontSize: '36px', fontWeight: 700, color: colors.navy, display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1 }}>
                   {avgValue.toFixed(2)} <span style={{ fontSize: '16px', color: colors.textMuted, fontWeight: 500 }}>/ 5</span>
@@ -697,7 +873,7 @@ export default function AdminDashboard({ navigate }) {
                 </div>
               </div>
 
-              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, borderTop: `4px solid #3B82F6`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
+              <div className="card-hover" style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '24px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '13px', color: colors.textMuted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '12px' }}>TOP CATEGORY</div>
                 <div style={{ fontSize: '28px', fontWeight: 700, color: colors.navy, marginTop: '8px', lineHeight: 1 }}>{topCategory.name}</div>
                 <div style={{ fontSize: '14px', color: colors.textMuted, marginTop: '12px' }}>Highest rated at <strong>{topCategory.score}/5</strong></div>
@@ -705,8 +881,7 @@ export default function AdminDashboard({ navigate }) {
 
             </div>
 
-            {/* Charts Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '24px', marginBottom: '40px' }}>
+            <div className="dashboard-charts-grid">
 
               <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', marginBottom: '32px' }}>CATEGORY AVERAGES</h3>
@@ -732,7 +907,7 @@ export default function AdminDashboard({ navigate }) {
                 {total === 0 ? (
                   <div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textMuted, fontSize: '15px' }}>No safe records available.</div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: '16px' }}>
+                  <div className="pie-chart-grid">
                     <div style={{ height: '260px', width: '100%', position: 'relative', minWidth: 0 }}>
                       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <PieChart>
@@ -776,9 +951,8 @@ export default function AdminDashboard({ navigate }) {
 
             </div>
 
-            {/* New Analytics Comparison & Trends Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '40px' }}>
-              
+            <div className="dashboard-analytics-grid">
+
               {/* Stall Comparison Bar Chart */}
               <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', marginBottom: '32px' }}>STALL RATINGS COMPARISON</h3>
@@ -839,8 +1013,8 @@ export default function AdminDashboard({ navigate }) {
               </div>
             </div>
 
-            <div style={{ flex: 1, padding: '0 40px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
+            <div style={{ flex: 1, padding: '0 40px', overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '800px' }}>
                 <thead>
                   <tr>
                     <th style={{ padding: '20px 12px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', borderBottom: `2px solid ${colors.border}`, width: '8%' }}>ID</th>
@@ -920,8 +1094,8 @@ export default function AdminDashboard({ navigate }) {
               </div>
             </div>
 
-            <div style={{ flex: 1, padding: '24px 40px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
+            <div style={{ flex: 1, padding: '24px 40px', overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '950px' }}>
                 <thead>
                   <tr>
                     <th style={{ padding: '16px 12px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', borderBottom: `2px solid ${colors.border}`, width: '6%' }}>ID</th>
@@ -1013,8 +1187,8 @@ export default function AdminDashboard({ navigate }) {
               </div>
             </div>
 
-            <div style={{ flex: 1, padding: '0 40px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
+            <div style={{ flex: 1, padding: '0 40px', overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '800px' }}>
                 <thead>
                   <tr>
                     <th style={{ padding: '20px 12px', fontSize: '12px', fontWeight: 700, color: colors.danger, letterSpacing: '0.05em', borderBottom: `2px solid #FCA5A5`, width: '8%' }}>ID</th>
@@ -1223,27 +1397,27 @@ export default function AdminDashboard({ navigate }) {
               {modalState.type === 'info' && <div style={{ backgroundColor: '#EFF6FF', padding: '12px', borderRadius: '50%' }}><ShieldCheck color="#3B82F6" size={28} /></div>}
               <h3 style={{ margin: 0, fontSize: '20px', color: colors.navy, fontWeight: 700 }}>{modalState.title}</h3>
             </div>
-            
+
             <p style={{ margin: '0 0 28px 0', color: colors.textMuted, fontSize: '15px', lineHeight: 1.6 }}>
               {modalState.message}
             </p>
-            
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               {modalState.type === 'confirm' ? (
                 <>
-                  <button 
-                    onClick={closeCustomModal} 
+                  <button
+                    onClick={closeCustomModal}
                     style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       if (modalState.onConfirm) modalState.onConfirm();
                       closeCustomModal();
-                    }} 
+                    }}
                     style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
@@ -1252,8 +1426,8 @@ export default function AdminDashboard({ navigate }) {
                   </button>
                 </>
               ) : (
-                <button 
-                  onClick={closeCustomModal} 
+                <button
+                  onClick={closeCustomModal}
                   style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
                   onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}

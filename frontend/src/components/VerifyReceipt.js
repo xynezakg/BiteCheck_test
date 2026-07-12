@@ -50,10 +50,27 @@ export default function VerifyReceipt({ navigate }) {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Inter', -apple-system, sans-serif", padding: '40px 20px', position: 'relative'
-    }}>
+    <div className="receipt-container">
+      {/* ─── RESPONSIVE CSS ─── */}
+      <style>{`
+        .receipt-container { 
+          min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          font-family: 'Inter', -apple-system, sans-serif; padding: 40px 20px; position: relative; box-sizing: border-box;
+        }
+        .receipt-card { 
+          width: 100%; max-width: 600px; background-color: ${colors.cardBg}; padding: 48px; 
+          border-radius: 24px; border: 1px solid ${colors.border};
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative;
+          z-index: 1; box-sizing: border-box;
+        }
+        .receipt-title { font-size: 2rem; }
+
+        @media (max-width: 600px) {
+          .receipt-container { padding: 20px 12px !important; }
+          .receipt-card { padding: 32px 20px !important; border-radius: 16px !important; }
+          .receipt-title { font-size: 1.6rem !important; }
+        }
+      `}</style>
       
       {/* --- BACKGROUND IMAGE LAYER --- */}
       <div style={{ 
@@ -72,13 +89,7 @@ export default function VerifyReceipt({ navigate }) {
       }} />
 
       {/* --- MAIN CONTENT CARD --- */}
-      <div style={{ 
-        width: '100%', maxWidth: '600px', backgroundColor: colors.cardBg, padding: '48px', 
-        borderRadius: '24px', border: `1px solid ${colors.border}`,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative',
-        zIndex: 1, // Ensures the card sits ABOVE the blurred background
-        borderTop: `6px solid ${colors.gold}` 
-      }}>
+      <div className="receipt-card">
         
         {/* Back Button */}
         <button onClick={() => navigate('landing')} style={{ 
@@ -102,7 +113,7 @@ export default function VerifyReceipt({ navigate }) {
             <BadgeCheck size={32} />
           </div>
           
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: colors.navy, margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
+          <h1 className="receipt-title" style={{ fontWeight: 800, color: colors.navy, margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
             Verify Receipt
           </h1>
           <p style={{ color: colors.textMuted, margin: '0 0 36px 0', fontSize: '15px', lineHeight: 1.6 }}>
