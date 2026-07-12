@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(100) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'student', 
     password_hash VARCHAR(255) NOT NULL,
+    academic_level VARCHAR(20),
+    email VARCHAR(255) UNIQUE,
+    is_email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

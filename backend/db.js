@@ -66,6 +66,9 @@ async function initDB() {
 
         // Academic level column for JHS / SHS / College routing
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS academic_level VARCHAR(20);`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);`);
 
         // Canteen group column for stalls (highschool | college | null = general)
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS canteen_group VARCHAR(20);`);

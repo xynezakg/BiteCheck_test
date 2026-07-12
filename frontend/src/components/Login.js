@@ -21,6 +21,7 @@ export default function Login({ navigate }) {
   const [academicLevel, setAcademicLevel] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [email, setEmail] = useState('');
   const colors = {
     navy: '#0C2340', 
     gold: '#E5A823', 
@@ -39,7 +40,7 @@ export default function Login({ navigate }) {
 
     try {
       if (isLogin) {
-        const data = await loginUser({ ua_id: uaId, password });
+        const data = await loginUser({ ua_id_or_email: uaId, password });
         localStorage.setItem('ua_token', data.token);
         localStorage.setItem('ua_user', JSON.stringify(data.user));
 
@@ -54,6 +55,13 @@ export default function Login({ navigate }) {
           setLoading(false);
           return;
         }
+        if (role !== 'admin') {
+          if (!email || !/^[a-zA-Z0-9._%+-]+@ua\.edu\.ph$/i.test(email)) {
+            setError('Valid UA email address ending in @ua.edu.ph is required.');
+            setLoading(false);
+            return;
+          }
+        }
         if (role === 'student' && !academicLevel) {
           setError('Please select your academic level to continue.');
           setLoading(false);
@@ -64,11 +72,19 @@ export default function Login({ navigate }) {
           setLoading(false);
           return;
         }
-        await registerUser({ ua_id: uaId, full_name: fullName, role, password, academic_level: role === 'student' ? academicLevel : null });
+        await registerUser({ 
+          ua_id: uaId, 
+          full_name: fullName, 
+          role, 
+          password, 
+          academic_level: role === 'student' ? academicLevel : null,
+          email: role === 'admin' ? null : email
+        });
         setIsLogin(true);
         setPassword('');
         setConfirmPassword('');
         setUaId('');
+        setEmail('');
         setFullName('');
         setRole('student');
         setAcademicLevel('');
@@ -213,15 +229,32 @@ export default function Login({ navigate }) {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>UA ID NUMBER</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>
+                {isLogin ? 'STUDENT ID OR EMAIL' : 'UA ID NUMBER'}
+              </label>
               <div style={{ position: 'relative' }}>
                 <User size={18} color={colors.textMuted} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input required type="number" placeholder="e.g. 2024123456" value={uaId} onChange={(e) => setUaId(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                <input 
+                  required 
+                  type={isLogin ? "text" : "number"} 
+                  placeholder={isLogin ? "e.g. 2024123456 or student@ua.edu.ph" : "e.g. 2024123456"} 
+                  value={uaId} 
+                  onChange={(e) => setUaId(e.target.value)} 
+                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }} 
+                />
               </div>
             </div>
 
             {!isLogin && (
               <>
+                {role !== 'admin' && (
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>EMAIL ADDRESS</label>
+                    <input required type="email" placeholder="student@ua.edu.ph" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                    <p style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px', marginBottom: 0 }}>Must end with @ua.edu.ph. You will need to verify this email address.</p>
+                  </div>
+                )}
+
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px', display: 'block', letterSpacing: '0.05em' }}>FULL NAME</label>
                   <input required type="text" placeholder="Maria Santos" value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }} />
@@ -371,8 +404,8 @@ export default function Login({ navigate }) {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, fontFamily: 'inherit' }}>
           <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '40px', maxWidth: '420px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)', border: `1px solid ${colors.border}` }}>
             <div style={{ fontSize: '60px', marginBottom: '16px' }}>✓</div>
-            <h3 style={{ fontSize: '24px', fontWeight: 700, color: colors.navy, marginBottom: '12px' }}>Account Created Successfully!</h3>
-            <p style={{ fontSize: '15px', color: colors.textMuted, marginBottom: '28px', lineHeight: '1.6' }}>Your account has been registered successfully. Please log in with your credentials to continue.</p>
+            <h3 style={{ fontSize: '24px', fontWeight: 700, color: colors.navy, marginBottom: '12px' }}>Verification Email Sent!</h3>
+            <p style={{ fontSize: '15px', color: colors.textMuted, marginBottom: '28px', lineHeight: '1.6' }}>Your account has been registered successfully. A verification link has been sent to your @ua.edu.ph email address. Please verify your email before logging in.</p>
             <button 
               onClick={() => {
                 setSuccessModal(false);

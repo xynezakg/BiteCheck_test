@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
 
 const {
-    addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
+    pool, addFeedback, getAllFeedback, deleteFeedback, quarantineFeedback,
     getFeedbackPhoto,
     getAllStalls, addStall, deleteStall, editStall,
     getStallByToken, verifyStallEmail, getStallById,
@@ -14,6 +14,7 @@ const {
 const { verifySignature } = require('./eddsa');
 const { registerUser, loginUser, requireAuth } = require('./auth');
 const { generateStoreReport, analyzeFeedbackData } = require('./reportGenerator');
+const { sendEmail } = require('./email');
 
 // --- CLOUDINARY CONFIGURATION ---
 cloudinary.config({
@@ -65,42 +66,36 @@ const extractPublicId = (url) => {
     }
 };
 
-// --- HELPER: SEND EMAIL VIA NODEMAILER (GMAIL SMTP) ---
-const sendEmail = async (toEmail, subject, htmlContent, pdfBuffer = null, pdfName = "") => {
+// --- USER EMAIL VERIFICATION ROUTE ---
+router.get('/users/verify-email', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send("Verification token is required.");
+
     try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT) || 465,
-            secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
+        const userResult = await pool.query('SELECT * FROM users WHERE verification_token = $1', [token]);
+        const user = userResult.rows[0];
 
-        const mailOptions = {
-            from: process.env.SMTP_FROM || `"UA Canteen Administration" <${process.env.SMTP_USER}>`,
-            to: toEmail,
-            subject: subject,
-            html: htmlContent
-        };
-
-        if (pdfBuffer) {
-            mailOptions.attachments = [
-                {
-                    filename: pdfName || 'Evaluation_Report.pdf',
-                    content: pdfBuffer
-                }
-            ];
+        if (!user) {
+            return res.status(400).send("Invalid or expired verification token.");
         }
 
-        const info = await transporter.sendMail(mailOptions);
-        return { data: info };
-    } catch (error) {
-        console.error("\n[Nodemailer Error]:", error);
-        return { error: error.message || "Failed to send via Nodemailer" };
+        await pool.query('UPDATE users SET is_email_verified = TRUE, verification_token = NULL WHERE id = $1', [user.id]);
+
+        res.send(`
+            <div style="font-family: Arial, sans-serif; text-align: center; padding: 50px; max-width: 600px; margin: 50px auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <div style="font-size: 50px; color: #10B981; margin-bottom: 20px;">✓</div>
+                <h2 style="color: #0C2340; margin-bottom: 10px;">Verification Successful!</h2>
+                <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
+                    Thank you <strong>${user.full_name}</strong>. Your UA account email has been verified successfully. You can now log in using either your Student ID or your @ua.edu.ph email address.
+                </p>
+                <a href="${process.env.FRONTEND_URL || 'https://bite-check-frontend.vercel.app'}/login" style="background-color: #0C2340; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; border: 1px solid #0C2340; display: inline-block;">Go to Login</a>
+            </div>
+        `);
+    } catch (err) {
+        console.error("Verification error:", err);
+        res.status(500).send("Internal server error during verification.");
     }
-};
+});
 
 // --- IDENTITY & AUTH ROUTES ---
 router.post('/register', registerUser);
