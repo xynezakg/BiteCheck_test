@@ -11,8 +11,7 @@ const app = express();
 app.use(cors({
     origin: [
         'http://localhost:3000',
-        //'https://bite-check-backend.vercel.app/',
-        'https://bite-check-frontend.vercel.app/' // <--- Your Render Frontend
+        'https://bite-check-frontend.vercel.app'
     ],
     credentials: true
 }));
