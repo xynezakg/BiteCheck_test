@@ -54,6 +54,13 @@ export default function LandingPage({ navigate }) {
     loadData();
   }, []);
 
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // Dynamically classify stalls by name keywords
   const getStallCategory = (name) => {
     const lower = name.toLowerCase();
@@ -247,6 +254,7 @@ export default function LandingPage({ navigate }) {
 
         @media (max-width: 1024px) {
           .header-pad { padding: 18px 40px !important; }
+          .nav-links-container { display: none !important; }
           .hero-banner { flex-direction: column; padding: 60px 40px !important; gap: 48px !important; }
           .hero-left { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; }
           .hero-right { width: 100%; max-width: 500px; }
@@ -267,33 +275,59 @@ export default function LandingPage({ navigate }) {
 
       {/* ─── STICKY HEADER ─── */}
       <header className="header-pad" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-        backdropFilter: 'blur(10px)',
-        borderBottom: `1px solid ${colors.border}`, 
+        backgroundColor: colors.navy, 
+        borderBottom: `3px solid ${colors.gold}`, 
         display: 'flex', 
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.02)',
+        boxShadow: '0 8px 30px rgba(12, 35, 64, 0.15)',
         position: 'sticky',
         top: 0,
         zIndex: 100
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1 }}>
-          <img src="/ua-logo.png" alt="UA Logo" className="logo-img" />
-          <span className="univ-text" style={{ color: colors.navy, fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <img src="/ua-logo.png" alt="UA Logo" className="logo-img" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+          <span className="univ-text" style={{ color: colors.white, fontWeight: 800, letterSpacing: '-0.02em', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
             University of the Assumption
           </span>
         </div>
 
-        <div className="staff-btn-container" style={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
+        {/* Dynamic section links connecting to landing page blocks */}
+        <div className="nav-links-container" style={{ display: 'flex', alignItems: 'center', gap: '28px', zIndex: 1 }}>
+          <button onClick={() => scrollToSection('scorecard-section')} style={{ background: 'none', border: 'none', color: '#E2E8F0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', transition: 'color 0.2s', padding: 0 }} onMouseEnter={e => e.currentTarget.style.color = colors.gold} onMouseLeave={e => e.currentTarget.style.color = '#E2E8F0'}>
+            Scorecard
+          </button>
+          <button onClick={() => scrollToSection('stalls-section')} style={{ background: 'none', border: 'none', color: '#E2E8F0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', transition: 'color 0.2s', padding: 0 }} onMouseEnter={e => e.currentTarget.style.color = colors.gold} onMouseLeave={e => e.currentTarget.style.color = '#E2E8F0'}>
+            Food Stalls
+          </button>
+          <button onClick={() => scrollToSection('security-section')} style={{ background: 'none', border: 'none', color: '#E2E8F0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', transition: 'color 0.2s', padding: 0 }} onMouseEnter={e => e.currentTarget.style.color = colors.gold} onMouseLeave={e => e.currentTarget.style.color = '#E2E8F0'}>
+            Security Guide
+          </button>
+          <button onClick={() => scrollToSection('reviews-section')} style={{ background: 'none', border: 'none', color: '#E2E8F0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', transition: 'color 0.2s', padding: 0 }} onMouseEnter={e => e.currentTarget.style.color = colors.gold} onMouseLeave={e => e.currentTarget.style.color = '#E2E8F0'}>
+            Reviews
+          </button>
+        </div>
+
+        <div className="staff-btn-container" style={{ display: 'flex', alignItems: 'center', gap: '14px', zIndex: 1 }}>
+          <button 
+            onClick={() => navigate('student-login')}
+            className="btn-rectangular"
+            style={{ 
+              backgroundColor: colors.gold, color: colors.white, border: 'none', padding: '10px 18px', 
+              cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit'
+            }}
+          >
+            Start Review
+          </button>
           <button 
             onClick={() => navigate('admin-login')}
             className="btn-rectangular"
             style={{ 
-              backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 22px', 
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', 
-              fontSize: '12px', fontFamily: 'inherit'
+              backgroundColor: 'transparent', color: colors.white, border: `1.5px solid ${colors.white}`, padding: '8px 16px', 
+              cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '6px'
             }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <LogIn size={14} /> Staff Login
           </button>
@@ -418,7 +452,7 @@ export default function LandingPage({ navigate }) {
         )}
 
         {/* TOP LAYOUT: Feedback info & Overall Scorecard */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '60px' }}>
+        <div id="scorecard-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '60px' }}>
           
           {/* Action details card */}
           <div className="card-premium" style={{ padding: '36px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', justifyContent: 'center' }}>
@@ -499,7 +533,7 @@ export default function LandingPage({ navigate }) {
         </div>
 
         {/* ─── DYNAMIC FOOD STALLS GRID ─── */}
-        <section style={{ marginBottom: '80px' }}>
+        <section id="stalls-section" style={{ marginBottom: '80px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px', marginBottom: '32px', borderBottom: `1.5px solid ${colors.border}`, paddingBottom: '20px' }}>
             <div>
               <h2 style={{ fontSize: '26px', fontWeight: 800, color: colors.navy, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>Explore Our Food Stalls</h2>
@@ -567,7 +601,7 @@ export default function LandingPage({ navigate }) {
         </section>
 
         {/* ─── "HOW IT WORKS" SECURE VISUAL TIMELINE ─── */}
-        <section style={{ 
+        <section id="security-section" style={{ 
           marginBottom: '80px', 
           backgroundColor: colors.navy, 
           color: colors.white, 
@@ -606,7 +640,7 @@ export default function LandingPage({ navigate }) {
 
         {/* ─── TOP REVIEWS FEED ─── */}
         {topReviews.length > 0 && (
-          <section style={{ marginBottom: '40px' }}>
+          <section id="reviews-section" style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 800, color: colors.navy, marginBottom: '28px', letterSpacing: '-0.02em', borderBottom: `1.5px solid ${colors.border}`, paddingBottom: '20px' }}>
               Top Student Reviews
             </h2>
