@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls } from "../api";
-import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, UtensilsCrossed, BookOpen } from 'lucide-react';
+
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
@@ -13,6 +14,7 @@ export default function FeedbackForm({ navigate }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ comment: "" });
 
+  const [selectedCanteen, setSelectedCanteen] = useState(''); // 'highschool' | 'college'
   const [selectedStall, setSelectedStall] = useState("");
   const [availableStalls, setAvailableStalls] = useState([]);
   const [loadingStalls, setLoadingStalls] = useState(true);
@@ -50,12 +52,11 @@ export default function FeedbackForm({ navigate }) {
         setLoadingStalls(true);
         const data = await fetchStalls();
         if (data && Array.isArray(data)) {
-          // Keep the full objects so we have access to stall.image when rendering the selection cards
-          // 👉 NEW: Only show stalls with a verified email!
+          // Only show stalls with a verified email
           const verifiedStalls = data.filter(stall => stall.is_email_verified === true);
           setAvailableStalls(verifiedStalls);
 
-          // 👉 NEW: QR AUTO-ROUTING LOGIC
+          // QR AUTO-ROUTING LOGIC
           const params = new URLSearchParams(window.location.search);
           const autoStall = params.get('stall');
 
@@ -63,11 +64,11 @@ export default function FeedbackForm({ navigate }) {
             const matched = verifiedStalls.find(s => s.name.toLowerCase() === autoStall.toLowerCase());
             if (matched) {
               setSelectedStall(matched.name);
-              setStep(2); // 🔥 Instantly skip step 1 for QR code users to maximize UX speed!
+              setStep(2); // Skip step 1 for QR code users
             } else {
               setSelectedStall("General Feedback");
             }
-          } else if (data.length === 0) {
+          } else if (verifiedStalls.length === 0) {
             setSelectedStall("General Feedback");
           }
         }
@@ -79,6 +80,7 @@ export default function FeedbackForm({ navigate }) {
         setLoadingStalls(false);
       }
     };
+
 
     const checkDraft = () => {
       const savedDraft = localStorage.getItem('ua_feedback_draft');
@@ -102,6 +104,7 @@ export default function FeedbackForm({ navigate }) {
 
     loadStalls().then(checkDraft);
   }, [navigate]);
+
 
   // Auto-save draft on changes
   useEffect(() => {
@@ -336,123 +339,201 @@ export default function FeedbackForm({ navigate }) {
 
           <div className="card-inner">
 
-            {/* --- STEP 1: SELECT LOCATION --- */}
+            {/* --- STEP 1: SELECT CANTEEN & STALL --- */}
             {step === 1 && status !== "signing" && (
               <div style={{ animation: 'fadeUp 0.4s ease' }}>
                 <div style={{ textAlign: 'center', marginBottom: '36px' }}>
                   <h2 style={{ fontSize: '26px', fontWeight: 800, color: colors.navy, margin: '0 0 10px 0', letterSpacing: '-0.02em' }}>Where did you eat?</h2>
-                  <p style={{ color: colors.textMuted, fontSize: '16px', margin: 0 }}>Select the food stall you would like to review to begin.</p>
+                  <p style={{ color: colors.textMuted, fontSize: '16px', margin: 0 }}>First, choose the canteen. Then select the stall you'd like to review.</p>
                 </div>
 
                 <div style={{ marginBottom: '48px' }}>
-                  {loadingStalls ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: colors.textMuted, fontSize: '15px', padding: '40px 0', justifyContent: 'center', backgroundColor: colors.bg, borderRadius: '16px' }}>
-                      <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} color={colors.navy} /> Loading available stalls...
-                    </div>
-                  ) : availableStalls.length === 0 ? (
-                    <div style={{ padding: '40px', backgroundColor: colors.bg, borderRadius: '16px', border: `2px dashed ${colors.border}`, color: colors.textMuted, fontSize: '16px', textAlign: 'center' }}>
-                      <Store size={40} color="#CBD5E1" style={{ margin: '0 auto 16px auto', display: 'block' }} />
-                      No specific stalls are listed right now.<br />Your review will be submitted as <strong style={{ color: colors.navy }}>General Feedback</strong>.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center' }}>
-                      {availableStalls.map((stall, index) => {
-                        const isSelected = selectedStall === stall.name;
 
-                        // A beautiful array of different food images for variety
-                        const fallbackImages = [
-                          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80", // BBQ
-                          "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80", // Pizza
-                          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", // Healthy Bowl
-                          "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=400&q=80", // Pancakes
-                          "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=400&q=80"  // Burger
-                        ];
+                  {/* ─── PHASE 1: CANTEEN PICKER ─── */}
+                  {!selectedCanteen ? (
+                    <div>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: colors.textMuted, letterSpacing: '0.08em', marginBottom: '16px', textAlign: 'center' }}>SELECT CANTEEN</p>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
 
-                        // Pick a unique placeholder based on the stall's position in the list
-                        const uniquePlaceholder = fallbackImages[index % fallbackImages.length];
-
-                        // Checks multiple possible database column names just in case!
-                        const stallImage = stall.image || stall.photo || stall.imageUrl || stall.attachment || uniquePlaceholder;
-
-                        return (
+                        {[
+                          {
+                            key: 'highschool',
+                            title: 'High School Canteen',
+                            icon: <UtensilsCrossed size={28} strokeWidth={1.5} color={colors.navy} />,
+                          },
+                          {
+                            key: 'college',
+                            title: 'College Canteen',
+                            icon: <BookOpen size={28} strokeWidth={1.5} color={colors.navy} />,
+                          },
+                        ].map(opt => (
                           <div
-                            key={stall.name}
-                            onClick={() => setSelectedStall(stall.name)}
+                            key={opt.key}
+                            onClick={() => setSelectedCanteen(opt.key)}
                             style={{
-                              width: '320px',
+                              flex: '1 1 220px', maxWidth: '320px',
                               backgroundColor: colors.white,
-                              borderRadius: '16px',
-                              overflow: 'hidden',
+                              borderRadius: '12px',
+                              border: `1.5px solid ${colors.border}`,
+                              padding: '28px 24px',
                               cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              boxShadow: isSelected ? `0 0 0 3px ${colors.navy}, 0 12px 24px rgba(12, 35, 64, 0.2)` : '0 4px 12px rgba(0,0,0,0.06)',
-                              transform: isSelected ? 'translateY(-4px)' : 'none',
-                              display: 'flex',
-                              flexDirection: 'column'
+                              transition: 'all 0.18s ease',
+                              display: 'flex', flexDirection: 'column', gap: '10px',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                             }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                              }
+                            onMouseEnter={e => {
+                              e.currentTarget.style.borderColor = colors.navy;
+                              e.currentTarget.style.boxShadow = '0 4px 16px rgba(12,35,64,0.1)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
                             }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)';
-                                e.currentTarget.style.transform = 'none';
-                              }
+                            onMouseLeave={e => {
+                              e.currentTarget.style.borderColor = colors.border;
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                              e.currentTarget.style.transform = 'none';
                             }}
                           >
-                            {/* Card Image */}
-                            <div style={{
-                              height: '140px',
-                              width: '100%',
-                              backgroundImage: `url("${stallImage}")`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              position: 'relative'
-                            }}>
-                              {isSelected && (
-                                <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: colors.white, borderRadius: '50%', padding: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                                  <CheckCircle2 size={24} color={colors.navy} fill={colors.gold} />
-                                </div>
-                              )}
+                            <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {opt.icon}
                             </div>
-
-                            {/* Card Body */}
-                            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: colors.text, lineHeight: 1.3, flex: 1, paddingRight: '12px' }}>
-                                  {stall.name}
-                                </h3>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 500 }}>Services</div>
-                                  <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700 }}>Until 5PM</div>
-                                </div>
-                              </div>
-
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                                <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Food Service</span>
-                                <span style={{ padding: '6px 12px', backgroundColor: '#F8FAFC', borderRadius: '100px', fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>Beverages</span>
-                              </div>
-
-                              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                                <button style={{
-                                  flex: 1, padding: '10px 0',
-                                  backgroundColor: isSelected ? colors.navy : '#1E40AF',
-                                  color: colors.white, border: 'none', borderRadius: '6px',
-                                  fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}>
-                                  {isSelected ? 'Selected' : 'Select Stall'}
-                                </button>
-                              </div>
-
+                            <div>
+                              <div style={{ fontSize: '16px', fontWeight: 700, color: colors.navy }}>{opt.title}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: colors.navy, marginTop: '4px' }}>
+                              Select <ArrowRight size={13} />
                             </div>
                           </div>
+                        ))}
+
+                      </div>
+                    </div>
+
+                  ) : (
+                    /* ─── PHASE 2: STALL PICKER (filtered by chosen canteen) ─── */
+                    <div>
+                      {/* Back to canteen picker */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedCanteen(''); setSelectedStall(''); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            background: 'none', border: `1px solid ${colors.border}`,
+                            color: colors.textMuted, padding: '6px 14px', borderRadius: '8px',
+                            fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          <ArrowLeft size={14} /> Change Canteen
+                        </button>
+
+                        {/* Active canteen badge */}
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '6px',
+                          backgroundColor: colors.bg,
+                          border: `1.5px solid ${colors.border}`,
+                          color: colors.navy,
+                          borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: 600
+                        }}>
+                          {selectedCanteen === 'highschool' ? 'High School Canteen' : 'College Canteen'}
+
+                        </div>
+                      </div>
+
+                      {/* Stall cards filtered by canteen */}
+                      {loadingStalls ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: colors.textMuted, fontSize: '15px', padding: '40px 0', justifyContent: 'center', backgroundColor: colors.bg, borderRadius: '16px' }}>
+                          <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} color={colors.navy} /> Loading stalls...
+                        </div>
+                      ) : (() => {
+                        // Filter stalls for the chosen canteen
+                        const getStallGroup = (s) => {
+                          if (s.canteen_group) return s.canteen_group.toLowerCase();
+                          const n = s.name.toLowerCase();
+                          if (n.includes('high school') || n.includes('hs') || n.includes('jhs') || n.includes('shs')) return 'highschool';
+                          if (n.includes('college')) return 'college';
+                          return 'general';
+                        };
+                        const canteenStalls = availableStalls.filter(s => {
+                          const g = getStallGroup(s);
+                          return g === selectedCanteen || g === 'general';
+                        });
+
+                        const fallbackImages = [
+                          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80",
+                          "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80",
+                          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
+                          "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=400&q=80",
+                          "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=400&q=80"
+                        ];
+
+                        if (canteenStalls.length === 0) {
+                          return (
+                            <div style={{ padding: '40px', backgroundColor: colors.bg, borderRadius: '16px', border: `2px dashed ${colors.border}`, color: colors.textMuted, fontSize: '16px', textAlign: 'center' }}>
+                              <Store size={40} color="#CBD5E1" style={{ margin: '0 auto 16px auto', display: 'block' }} />
+                              No stalls are currently listed for this canteen.<br />Your review will be submitted as <strong style={{ color: colors.navy }}>General Feedback</strong>.
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center' }}>
+                            {canteenStalls.map((stall, index) => {
+                              const isSelected = selectedStall === stall.name;
+                              const stallImage = stall.image || stall.photo || stall.imageUrl || stall.attachment || fallbackImages[index % fallbackImages.length];
+
+                              return (
+                                <div
+                                  key={stall.name}
+                                  onClick={() => setSelectedStall(stall.name)}
+                                  style={{
+                                    width: '300px',
+                                    backgroundColor: colors.white,
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isSelected ? `0 0 0 3px ${colors.navy}, 0 12px 24px rgba(12, 35, 64, 0.2)` : '0 4px 12px rgba(0,0,0,0.06)',
+                                    transform: isSelected ? 'translateY(-4px)' : 'none',
+                                    display: 'flex', flexDirection: 'column'
+                                  }}
+                                  onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
+                                  onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'none'; } }}
+                                >
+                                  <div style={{ height: '130px', width: '100%', backgroundImage: `url("${stallImage}")`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                                    {isSelected && (
+                                      <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: colors.white, borderRadius: '50%', padding: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                                        <CheckCircle2 size={24} color={colors.navy} fill={colors.gold} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 800, color: colors.text, lineHeight: 1.3 }}>{stall.name}</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+                                      <span style={{
+                                        padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 600,
+                                        backgroundColor: colors.bg,
+                                        color: colors.textMuted,
+                                        border: `1px solid ${colors.border}`
+                                      }}>
+                                        {selectedCanteen === 'highschool' ? 'High School Canteen' : 'College Canteen'}
+                                      </span>
+                                    </div>
+                                    <button style={{
+                                      width: '100%', padding: '10px 0', marginTop: 'auto',
+                                      backgroundColor: isSelected ? colors.navy : '#1E40AF',
+                                      color: colors.white, border: 'none', borderRadius: '6px',
+                                      fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}>
+                                      {isSelected ? 'Selected' : 'Select Stall'}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         );
-                      })}
+                      })()}
                     </div>
                   )}
                 </div>

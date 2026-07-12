@@ -64,7 +64,14 @@ async function initDB() {
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE;`);
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);`);
 
+        // Academic level column for JHS / SHS / College routing
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS academic_level VARCHAR(20);`);
+
+        // Canteen group column for stalls (highschool | college | null = general)
+        await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS canteen_group VARCHAR(20);`);
+
         console.log("✅ Database initialized: 'users', 'feedbacks', and 'stalls' tables are ready.");
+
     } catch (err) {
         console.error("❌ Failed to create table:", err.message);
     }
@@ -106,19 +113,19 @@ async function getAllStalls() {
 }
 
 // Saves the image
-async function addStall(name, image, email = null, verification_token = null) {
+async function addStall(name, image, email = null, verification_token = null, canteen_group = null) {
     const result = await pool.query(
-        `INSERT INTO stalls (name, image, email, verification_token) VALUES ($1, $2, $3, $4) RETURNING *`, 
-        [name, image, email, verification_token]
+        `INSERT INTO stalls (name, image, email, verification_token, canteen_group) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [name, image, email, verification_token, canteen_group]
     );
     return result.rows[0];
 }
 
 // Function for the Edit feature!
-async function editStall(id, name, image, email = null, is_email_verified = false, verification_token = null) {
+async function editStall(id, name, image, email = null, is_email_verified = false, verification_token = null, canteen_group = null) {
     const result = await pool.query(
-        `UPDATE stalls SET name = $1, image = $2, email = $3, is_email_verified = $4, verification_token = $5 WHERE id = $6 RETURNING *`, 
-        [name, image, email, is_email_verified, verification_token, id]
+        `UPDATE stalls SET name = $1, image = $2, email = $3, is_email_verified = $4, verification_token = $5, canteen_group = $6 WHERE id = $7 RETURNING *`,
+        [name, image, email, is_email_verified, verification_token, canteen_group, id]
     );
     return result.rows[0];
 }

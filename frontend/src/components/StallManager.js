@@ -7,6 +7,7 @@ export default function StallManager() {
   const [newName, setNewName] = useState("");
   const [newImage, setNewImage] = useState(null);
   const [newEmail, setNewEmail] = useState("");
+  const [newCanteenGroup, setNewCanteenGroup] = useState("");
   const [editingStallId, setEditingStallId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,16 +76,17 @@ export default function StallManager() {
       const isEditing = !!editingStallId;
       const existingStall = isEditing ? stalls.find(s => s.id === editingStallId) : null;
       const emailInput = newEmail.trim();
+      const groupInput = newCanteenGroup || null;
       // Check if it's a new email or if the email was changed during an update
       const emailChanged = isEditing ? (existingStall?.email !== emailInput) : !!emailInput;
 
       if (isEditing) {
         // Edit Existing
-        const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput);
+        const updated = await editStall(editingStallId, newName.trim(), newImage, emailInput, groupInput);
         setStalls(stalls.map(s => s.id === editingStallId ? updated : s));
       } else {
         // Add New
-        const newStall = await addStall(newName.trim(), newImage, emailInput);
+        const newStall = await addStall(newName.trim(), newImage, emailInput, groupInput);
         setStalls([...stalls, newStall]);
       }
 
@@ -107,6 +109,7 @@ export default function StallManager() {
     setNewName(stall.name);
     setNewImage(stall.image || null);
     setNewEmail(stall.email || "");
+    setNewCanteenGroup(stall.canteen_group || "");
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to the form
   };
 
@@ -115,6 +118,7 @@ export default function StallManager() {
     setNewName("");
     setNewImage(null);
     setNewEmail("");
+    setNewCanteenGroup("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -252,6 +256,40 @@ export default function StallManager() {
                 onChange={(e) => setNewEmail(e.target.value)}
                 style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
               />
+            </div>
+
+            {/* Canteen Group Selector */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>
+                Canteen Group <span style={{ fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>(determines which students see this stall)</span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { value: '', label: 'All Students', desc: 'Visible to everyone' },
+                  { value: 'highschool', label: 'High School', desc: 'JHS & SHS only' },
+                  { value: 'college', label: 'College', desc: 'College students only' },
+                ].map(opt => {
+                  const isSel = newCanteenGroup === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setNewCanteenGroup(opt.value)}
+                      style={{
+                        flex: '1 1 0', minWidth: '90px', padding: '10px 8px', borderRadius: '8px',
+                        border: `1.5px solid ${isSel ? colors.navy : colors.border}`,
+                        background: isSel ? colors.navy : colors.white,
+                        color: isSel ? colors.white : colors.textMuted,
+                        fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s',
+                        textAlign: 'center', lineHeight: 1.4,
+                      }}
+                    >
+                      <div>{opt.label}</div>
+                      <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '2px' }}>{opt.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
