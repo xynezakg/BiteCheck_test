@@ -3,13 +3,14 @@ import React, { useState } from "react";
 export default function AdminLogin({ navigate }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (username.trim().toLowerCase() === "admin" && password === "admin123") {
       navigate("admin-dashboard");
     } else {
-      alert("Invalid credentials. Use username 'admin' and password 'admin123'.");
+      setError("Invalid credentials. Use username 'admin' and password 'admin123'.");
     }
   };
 
@@ -35,12 +36,18 @@ export default function AdminLogin({ navigate }) {
           University of the Assumption<br />Canteen Evaluation System
         </p>
 
+        {error && (
+          <div style={{ backgroundColor: '#FEF2F2', color: '#EF4444', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '20px', border: '1px solid #FCA5A5', textAlign: 'left' }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} style={{ textAlign: 'left' }}>
           <label>Username</label>
           <input
             type="text"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => { setUsername(e.target.value); setError(""); }}
             placeholder="Enter username"
             autoComplete="username"
             required
@@ -50,7 +57,7 @@ export default function AdminLogin({ navigate }) {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); setError(""); }}
             placeholder="••••••••"
             autoComplete="current-password"
             required

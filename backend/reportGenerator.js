@@ -210,19 +210,28 @@ Read the following student reviews:
 ${rawCommentsForAI.join('\n- ')}
 
 Write a concise, professional 3-sentence summary identifying the overall sentiment, the best quality, and the major area for improvement. Do not use markdown like bold text.`;
-            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+
             const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+            
             const aiData = await aiResponse.json();
             if (aiData && aiData.candidates && aiData.candidates[0]) {
                 aiSummary = aiData.candidates[0].content.parts[0].text;
                 console.log(`[AI] Successfully mapped Gemini AI Summary!`);
             }
         } catch (error) {
-            console.error(`[AI] Failed to connect to Gemini API. Falling back to offline heuristic.`, error.message);
+            if (error.name === 'AbortError') {
+                console.warn(`[AI] Gemini API request timed out after 4 seconds. Falling back to offline heuristic.`);
+            } else {
+                console.error(`[AI] Failed to connect to Gemini API. Falling back to offline heuristic.`, error.message);
+            }
         }
     }
 

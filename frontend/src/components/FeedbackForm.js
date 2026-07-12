@@ -17,6 +17,9 @@ export default function FeedbackForm({ navigate }) {
   const [availableStalls, setAvailableStalls] = useState([]);
   const [loadingStalls, setLoadingStalls] = useState(true);
 
+  // Draft banner notification
+  const [draftBanner, setDraftBanner] = useState(false);
+
   const [ratings, setRatings] = useState({ Food: 5, Service: 5, Staff: 5, Cleanliness: 5, Value: 5 });
   const [hoverRating, setHoverRating] = useState({ category: '', val: 0 });
 
@@ -77,8 +80,40 @@ export default function FeedbackForm({ navigate }) {
       }
     };
 
-    loadStalls();
+    const checkDraft = () => {
+      const savedDraft = localStorage.getItem('ua_feedback_draft');
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          const params = new URLSearchParams(window.location.search);
+          if (!params.get('stall')) {
+            if (draft.selectedStall) setSelectedStall(draft.selectedStall);
+            if (draft.ratings) setRatings(draft.ratings);
+            if (draft.comment) setForm({ comment: draft.comment });
+            if (draft.step) setStep(draft.step);
+            setDraftBanner(true);
+            setTimeout(() => setDraftBanner(false), 4000);
+          }
+        } catch (e) {
+          console.error("Failed to restore draft", e);
+        }
+      }
+    };
+
+    loadStalls().then(checkDraft);
   }, [navigate]);
+
+  // Auto-save draft on changes
+  useEffect(() => {
+    if (selectedStall || form.comment || step > 1) {
+      localStorage.setItem('ua_feedback_draft', JSON.stringify({
+        selectedStall,
+        ratings,
+        comment: form.comment,
+        step
+      }));
+    }
+  }, [selectedStall, ratings, form.comment, step]);
 
   const colors = {
     navy: '#0C2340',
@@ -93,6 +128,17 @@ export default function FeedbackForm({ navigate }) {
   };
 
   const modernFont = "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  const getRatingLabel = (val) => {
+    switch (val) {
+      case 1: return "Terrible";
+      case 2: return "Needs Improvement";
+      case 3: return "Average";
+      case 4: return "Very Good";
+      case 5: return "Excellent!";
+      default: return "";
+    }
+  };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handleRatingChange = (category, value) => setRatings(prev => ({ ...prev, [category]: value }));
@@ -172,6 +218,7 @@ export default function FeedbackForm({ navigate }) {
       };
 
       await submitFeedback(fullPayload);
+      localStorage.removeItem('ua_feedback_draft');
 
       setReceiptData({
         signature: clientSignature,
@@ -268,6 +315,13 @@ export default function FeedbackForm({ navigate }) {
             Help us improve the UA Canteen. Your submission is mathematically sealed and linked to your verified identity.
           </p>
         </div>
+
+        {draftBanner && (
+          <div style={{ animation: 'fadeUp 0.3s ease', backgroundColor: '#ECFDF5', border: `1px solid rgba(16, 185, 129, 0.4)`, color: '#065F46', padding: '14px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', width: '100%', maxWidth: '900px', boxSizing: 'border-box' }}>
+            <CheckCircle2 size={18} color="#10B981" />
+            <span style={{ fontSize: '14px', fontWeight: 600 }}>Draft restored! We loaded your previous feedback evaluation.</span>
+          </div>
+        )}
 
         <div style={{ width: '100%', maxWidth: '900px', backgroundColor: colors.white, borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
 
@@ -442,7 +496,12 @@ export default function FeedbackForm({ navigate }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {Object.keys(ratings).map((category) => (
                         <div key={category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', backgroundColor: colors.bg, borderRadius: '8px', border: `1px solid transparent` }}>
-                          <span style={{ fontWeight: 600, fontSize: '14px', color: colors.text }}>{category}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                            <span style={{ fontWeight: 600, fontSize: '14px', color: colors.text }}>{category}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: colors.gold, marginTop: '2px', minHeight: '16px', transition: 'all 0.1s ease' }}>
+                              {getRatingLabel(hoverRating.category === category ? hoverRating.val : ratings[category])}
+                            </span>
+                          </div>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             {[1, 2, 3, 4, 5].map((star) => {
                               const isHovered = hoverRating.category === category && hoverRating.val >= star;
@@ -471,10 +530,19 @@ export default function FeedbackForm({ navigate }) {
                       <label style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 600, display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>ADDITIONAL COMMENTS</label>
                       <textarea
                         name="comment" placeholder="Tell us what you liked or how we can improve..." value={form.comment} onChange={handleChange}
-                        style={{ width: '100%', height: '140px', padding: '16px', fontSize: '15px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: colors.bg, resize: 'none', outline: 'none', color: colors.text, fontFamily: 'inherit', transition: 'border 0.2s', boxSizing: 'border-box' }}
+                        maxLength={500}
+                        style={{ width: '100%', height: '140px', padding: '16px', fontSize: '15px', borderRadius: '8px', border: `1px solid ${form.comment.length > 0 && form.comment.length < 10 ? colors.red : colors.border}`, backgroundColor: colors.bg, resize: 'none', outline: 'none', color: colors.text, fontFamily: 'inherit', transition: 'border 0.2s', boxSizing: 'border-box' }}
                         onFocus={(e) => e.target.style.borderColor = colors.navy}
                         onBlur={(e) => e.target.style.borderColor = colors.border}
                       ></textarea>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px' }}>
+                        <span style={{ color: form.comment.length < 10 ? colors.red : colors.success, fontWeight: 500 }}>
+                          {form.comment.length < 10 ? `Min 10 characters required (${10 - form.comment.length} left)` : "✓ Minimum length requirement met"}
+                        </span>
+                        <span style={{ color: colors.textMuted }}>
+                          {form.comment.length} / 500
+                        </span>
+                      </div>
                     </div>
 
                     <div>
@@ -515,10 +583,41 @@ export default function FeedbackForm({ navigate }) {
                   </button>
                   <button
                     type="button"
-                    style={{ padding: '16px 40px', fontSize: '15px', fontWeight: 600, backgroundColor: colors.navy, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(12, 35, 64, 0.2)', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#17365C'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.transform = 'none'; }}
-                    onClick={() => { setErrorMessage(""); setStatus("idle"); setStep(3); }}
+                    disabled={form.comment.length < 10}
+                    style={{ 
+                      padding: '16px 40px', 
+                      fontSize: '15px', 
+                      fontWeight: 600, 
+                      backgroundColor: form.comment.length < 10 ? '#CBD5E1' : colors.navy, 
+                      color: colors.white, 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      cursor: form.comment.length < 10 ? 'not-allowed' : 'pointer', 
+                      transition: 'all 0.2s', 
+                      boxShadow: form.comment.length < 10 ? 'none' : '0 4px 12px rgba(12, 35, 64, 0.2)', 
+                      fontFamily: 'inherit', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px' 
+                    }}
+                    onMouseEnter={(e) => { 
+                      if (form.comment.length >= 10) {
+                        e.currentTarget.style.backgroundColor = '#17365C'; 
+                        e.currentTarget.style.transform = 'translateY(-2px)'; 
+                      }
+                    }}
+                    onMouseLeave={(e) => { 
+                      if (form.comment.length >= 10) {
+                        e.currentTarget.style.backgroundColor = colors.navy; 
+                        e.currentTarget.style.transform = 'none'; 
+                      }
+                    }}
+                    onClick={() => { 
+                      if (form.comment.length < 10) return;
+                      setErrorMessage(""); 
+                      setStatus("idle"); 
+                      setStep(3); 
+                    }}
                   >
                     Review Feedback <ArrowRight size={18} />
                   </button>

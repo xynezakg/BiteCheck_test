@@ -17,6 +17,9 @@ export default function StallManager() {
   const showModal = (title, message, type = "success") => setModalState({ isOpen: true, title, message, type });
   const closeModal = () => setModalState({ ...modalState, isOpen: false });
 
+  // Sudo Delete Modal State
+  const [sudoDeleteModal, setSudoDeleteModal] = useState({ isOpen: false, stallId: null, stallName: "", inputPhrase: "" });
+
   const colors = {
     navy: '#0C2340', gold: '#E5A823', bg: '#F1F5F9',
     white: '#FFFFFF', text: '#1E293B', textMuted: '#64748B',
@@ -143,15 +146,30 @@ export default function StallManager() {
     } catch (e) { }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this stall?")) return;
+  const handleDelete = (id) => {
+    const stall = stalls.find(s => s.id === id);
+    if (!stall) return;
+    setSudoDeleteModal({
+      isOpen: true,
+      stallId: id,
+      stallName: stall.name,
+      inputPhrase: ""
+    });
+  };
+
+  const executeDeleteStall = async () => {
+    const id = sudoDeleteModal.stallId;
     try {
       if (editingStallId === id) handleCancelEdit();
       await deleteStall(id);
       setStalls(stalls.filter(s => s.id !== id));
       setError("");
+      setSudoDeleteModal({ isOpen: false, stallId: null, stallName: "", inputPhrase: "" });
+      showModal("Success!", "Stall has been successfully removed.", "success");
     } catch (err) {
       setError("Failed to delete stall.");
+      setSudoDeleteModal(prev => ({ ...prev, isOpen: false }));
+      showModal("Error", "Failed to delete stall.", "error");
     }
   };
 
@@ -358,7 +376,57 @@ export default function StallManager() {
             </div>
           </div>
         </div>
-      )}
+      {/* ─── SECURE SUDO DELETE MODAL ─── */}
+      {sudoDeleteModal.isOpen && (() => {
+        const requiredPhrase = `sudo-delete-${sudoDeleteModal.stallName.toLowerCase().replace(/\s+/g, '-')}`;
+        const canDelete = sudoDeleteModal.inputPhrase === requiredPhrase;
+        return (
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+            <div style={{ backgroundColor: colors.white, padding: '32px', borderRadius: '16px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)', animation: 'fadeUp 0.3s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '50%' }}><Trash2 color="#EF4444" size={28} /></div>
+                <h3 style={{ margin: 0, fontSize: '20px', color: colors.navy, fontWeight: 700 }}>Confirm Deletion</h3>
+              </div>
+
+              <p style={{ margin: '0 0 16px 0', color: colors.textMuted, fontSize: '14px', lineHeight: 1.6 }}>
+                Are you sure you want to delete <strong style={{ color: colors.navy }}>{sudoDeleteModal.stallName}</strong>? This will permanently delete the stall cover image, PDF reports, and all related student feedback data.
+              </p>
+
+              <div style={{ marginBottom: '24px', backgroundColor: colors.bg, padding: '16px', borderRadius: '8px', border: `1px solid ${colors.border}` }}>
+                <div style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '6px', fontWeight: 600 }}>REQUIRED VERIFICATION CODE:</div>
+                <code style={{ fontSize: '14px', fontWeight: 'bold', color: colors.red, wordBreak: 'break-all', fontFamily: 'monospace' }}>{requiredPhrase}</code>
+              </div>
+
+              <div style={{ marginBottom: '28px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '8px' }}>TYPE CODE TO PROCEED</label>
+                <input 
+                  type="text" 
+                  placeholder={requiredPhrase}
+                  value={sudoDeleteModal.inputPhrase}
+                  onChange={(e) => setSudoDeleteModal(prev => ({ ...prev, inputPhrase: e.target.value }))}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${canDelete ? '#10B981' : colors.border}`, outline: 'none', fontSize: '14px', color: colors.text, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button 
+                  onClick={() => setSudoDeleteModal({ isOpen: false, stallId: null, stallName: "", inputPhrase: "" })} 
+                  style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={!canDelete}
+                  onClick={executeDeleteStall} 
+                  style={{ backgroundColor: canDelete ? colors.red : '#CBD5E1', color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: canDelete ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                >
+                  Permanently Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

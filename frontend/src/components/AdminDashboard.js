@@ -3,7 +3,8 @@ import StallManager from './StallManager';
 import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
+  LineChart, Line
 } from 'recharts';
 import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users } from 'lucide-react';
 
@@ -17,10 +18,17 @@ export default function AdminDashboard({ navigate }) {
   const [fullScreenImage, setFullScreenImage] = useState(null);
   const [isAuditing, setIsAuditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [traceModal, setTraceModal] = useState(null);
+   const [traceModal, setTraceModal] = useState(null);
   const [traceStatus, setTraceStatus] = useState('loading');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Custom Modal State for Confirmations & Alerts
+  const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "", type: "confirm", onConfirm: null });
+  const showCustomModal = (title, message, type = "confirm", onConfirm = null) => {
+    setModalState({ isOpen: true, title, message, type, onConfirm });
+  };
+  const closeCustomModal = () => setModalState(prev => ({ ...prev, isOpen: false }));
 
   // Role-Based Access Control (Admin vs Viewer)
   const [userRole, setUserRole] = useState('admin');
@@ -171,6 +179,38 @@ export default function AdminDashboard({ navigate }) {
   ];
   const topCategory = count > 0 ? [...barData].sort((a, b) => b.score - a.score)[0] : { name: "N/A", score: 0 };
 
+  // Calculate Stall Comparison Chart Data
+  const stallScores = {};
+  safeFeedbacks.forEach(f => {
+    const stallMatch = f.comment?.match(/\[Stall: (.*?)\]/);
+    const name = stallMatch ? stallMatch[1] : 'General';
+    if (!stallScores[name]) {
+      stallScores[name] = { totalRating: 0, count: 0 };
+    }
+    stallScores[name].totalRating += f.rating;
+    stallScores[name].count += 1;
+  });
+
+  const stallComparisonData = Object.keys(stallScores).map(name => ({
+    name,
+    rating: Number((stallScores[name].totalRating / stallScores[name].count).toFixed(2))
+  })).sort((a, b) => b.rating - a.rating);
+
+  // Calculate Review Volume Trends over time
+  const timelineCounts = {};
+  feedbacks.forEach(f => {
+    if (!f.created_at) return;
+    const d = new Date(f.created_at);
+    const dateKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    timelineCounts[dateKey] = (timelineCounts[dateKey] || 0) + 1;
+  });
+
+  const timelineData = Object.keys(timelineCounts).map(date => ({
+    date,
+    count: timelineCounts[date],
+    timestamp: new Date(`${date}, ${new Date().getFullYear()}`).getTime()
+  })).sort((a, b) => a.timestamp - b.timestamp);
+
   const openModal = async (f) => {
     setSelectedFeedback(f);
     if (f.has_attachment && !f.attachment) {
@@ -223,26 +263,38 @@ export default function AdminDashboard({ navigate }) {
     }, 1500);
   };
 
-  const handleQuarantineRecord = async (id) => {
-    if (window.confirm(`SECURITY ALERT: Move Record #${id} to the Quarantine Zone?`)) {
-      try {
-        await quarantineFeedback(id);
-        setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, is_quarantined: true } : f));
-      } catch (err) {
-        alert("Failed to quarantine record. Check backend server.");
+  const handleQuarantineRecord = (id) => {
+    showCustomModal(
+      "Confirm Quarantine",
+      `SECURITY ALERT: Are you sure you want to move Record #${id} to the Quarantine Zone? This will hide it from students and report averages.`,
+      "confirm",
+      async () => {
+        try {
+          await quarantineFeedback(id);
+          setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, is_quarantined: true } : f));
+          showCustomModal("Success", `Record #${id} has been quarantined successfully.`, "success");
+        } catch (err) {
+          showCustomModal("Error", "Failed to quarantine record. Check backend server.", "error");
+        }
       }
-    }
+    );
   };
 
-  const handlePurgeRecord = async (id) => {
-    if (window.confirm(`FINAL WARNING: Are you sure you want to permanently delete Record #${id}? This action cannot be undone.`)) {
-      try {
-        await deleteFeedback(id);
-        setFeedbacks(prev => prev.filter(f => f.id !== id));
-      } catch (err) {
-        alert("Failed to permanently delete record.");
+  const handlePurgeRecord = (id) => {
+    showCustomModal(
+      "FINAL WARNING",
+      `Are you sure you want to permanently delete Record #${id}? This action cannot be undone and will delete it from Neon.`,
+      "confirm",
+      async () => {
+        try {
+          await deleteFeedback(id);
+          setFeedbacks(prev => prev.filter(f => f.id !== id));
+          showCustomModal("Success", `Record #${id} has been permanently deleted.`, "success");
+        } catch (err) {
+          showCustomModal("Error", "Failed to permanently delete record.", "error");
+        }
       }
-    }
+    );
   };
 
   const exportToCSV = () => {
@@ -386,10 +438,7 @@ export default function AdminDashboard({ navigate }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 600, color: colors.success, marginBottom: '40px', paddingLeft: '48px', letterSpacing: '0.05em' }}>
-          <div style={{ width: '8px', height: '8px', backgroundColor: colors.success, borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
-          LIVE SYNC ACTIVE
-        </div>
+
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <MenuItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
@@ -721,6 +770,51 @@ export default function AdminDashboard({ navigate }) {
                         Most common: <strong style={{ color: colors.navy }}>{dominantRating.star} Star</strong>
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* New Analytics Comparison & Trends Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '40px' }}>
+              
+              {/* Stall Comparison Bar Chart */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', marginBottom: '32px' }}>STALL RATINGS COMPARISON</h3>
+                {stallComparisonData.length === 0 ? (
+                  <div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textMuted, fontSize: '15px' }}>No stall ratings available.</div>
+                ) : (
+                  <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <BarChart data={stallComparisonData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11, fontWeight: 500 }} dy={10} />
+                        <YAxis domain={[0, 5]} axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 13 }} />
+                        <BarTooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '8px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '14px', fontWeight: 500 }} />
+                        <Bar dataKey="rating" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={35} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              {/* Review Volume Timeline Line Chart */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.05em', marginBottom: '32px' }}>FEEDBACK VOLUME TRENDS</h3>
+                {timelineData.length === 0 ? (
+                  <div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textMuted, fontSize: '15px' }}>No volume history available.</div>
+                ) : (
+                  <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <LineChart data={timelineData} margin={{ top: 10, right: 15, left: -25, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12, fontWeight: 500 }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 13 }} />
+                        <BarTooltip contentStyle={{ borderRadius: '8px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '14px', fontWeight: 500 }} />
+                        <Line type="monotone" dataKey="count" stroke={colors.navy} strokeWidth={3} activeDot={{ r: 8 }} dot={{ strokeWidth: 2, r: 4 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 )}
               </div>
@@ -1112,6 +1206,58 @@ export default function AdminDashboard({ navigate }) {
               {traceStatus !== 'loading' && (
                 <button onClick={() => setTraceModal(null)} style={{ marginTop: '40px', backgroundColor: 'transparent', color: '#94A3B8', border: '1px solid #334155', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 'bold', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1E293B'; e.currentTarget.style.color = '#F8FAFC'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#94A3B8'; }}>
                   &gt; EXIT_TRACE
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      {/* ─── CUSTOM MODAL (CONFIRM & ALERT) ─── */}
+      {modalState.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+          <div style={{ backgroundColor: colors.white, padding: '32px', borderRadius: '16px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', animation: 'fadeUp 0.3s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              {modalState.type === 'success' && <div style={{ backgroundColor: '#ECFDF5', padding: '12px', borderRadius: '50%' }}><ShieldCheck color="#10B981" size={28} /></div>}
+              {modalState.type === 'error' && <div style={{ backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '50%' }}><AlertTriangle color="#EF4444" size={28} /></div>}
+              {modalState.type === 'confirm' && <div style={{ backgroundColor: '#FEF3C7', padding: '12px', borderRadius: '50%' }}><AlertTriangle color="#D97706" size={28} /></div>}
+              {modalState.type === 'info' && <div style={{ backgroundColor: '#EFF6FF', padding: '12px', borderRadius: '50%' }}><ShieldCheck color="#3B82F6" size={28} /></div>}
+              <h3 style={{ margin: 0, fontSize: '20px', color: colors.navy, fontWeight: 700 }}>{modalState.title}</h3>
+            </div>
+            
+            <p style={{ margin: '0 0 28px 0', color: colors.textMuted, fontSize: '15px', lineHeight: 1.6 }}>
+              {modalState.message}
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              {modalState.type === 'confirm' ? (
+                <>
+                  <button 
+                    onClick={closeCustomModal} 
+                    style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (modalState.onConfirm) modalState.onConfirm();
+                      closeCustomModal();
+                    }} 
+                    style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
+                  >
+                    Confirm Action
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={closeCustomModal} 
+                  style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
+                >
+                  OK
                 </button>
               )}
             </div>

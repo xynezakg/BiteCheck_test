@@ -17,7 +17,8 @@ export default function Login({ navigate }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('student'); 
+  const [role, setRole] = useState('student');
+  const [agreeTerms, setAgreeTerms] = useState(false); 
 
   const colors = {
     navy: '#0C2340', 
@@ -52,6 +53,11 @@ export default function Login({ navigate }) {
           setLoading(false);
           return;
         }
+        if (!agreeTerms) {
+          setError('You must agree to the Terms and Conditions to register.');
+          setLoading(false);
+          return;
+        }
         await registerUser({ ua_id: uaId, full_name: fullName, role, password });
         setIsLogin(true);
         setPassword('');
@@ -59,6 +65,7 @@ export default function Login({ navigate }) {
         setUaId('');
         setFullName('');
         setRole('student');
+        setAgreeTerms(false);
         setSuccessModal(true);
       }
     } catch (err) {
@@ -265,6 +272,30 @@ export default function Login({ navigate }) {
                 {confirmPassword && password !== confirmPassword && (
                   <span style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px', display: 'block' }}>Passwords do not match</span>
                 )}
+                
+                {/* Terms and Conditions Widget */}
+                <div style={{ marginTop: '20px', border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '12px', backgroundColor: colors.bg, textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5, marginBottom: '12px' }}>
+                    <strong style={{ color: colors.navy }}>Introduction &amp; Acceptance of Terms:</strong>
+                    <ul style={{ margin: '6px 0 0 0', paddingLeft: '16px' }}>
+                      <li style={{ marginBottom: '4px' }}><strong style={{ color: colors.navy }}>Acceptance:</strong> By accessing or using our platform, you agree to be bound by these Terms and Conditions. If you do not agree, you must immediately cease using our services.</li>
+                      <li><strong style={{ color: colors.navy }}>Modifications:</strong> We reserve the right to modify these terms at any time; continued use constitutes acceptance of the updated terms.</li>
+                    </ul>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      required 
+                      type="checkbox" 
+                      id="agreeTerms" 
+                      checked={agreeTerms} 
+                      onChange={(e) => setAgreeTerms(e.target.checked)} 
+                      style={{ cursor: 'pointer', margin: 0 }} 
+                    />
+                    <label htmlFor="agreeTerms" style={{ fontSize: '12px', fontWeight: 600, color: colors.navy, cursor: 'pointer', userSelect: 'none' }}>
+                      I agree to the Terms and Conditions
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 
