@@ -145,32 +145,47 @@ export default function LandingPage({ navigate }) {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      backgroundColor: colors.lightGray, 
+      backgroundColor: colors.white, 
       fontFamily: modernFont, 
       display: 'flex', 
       flexDirection: 'column',
-      backgroundImage: `radial-gradient(circle at 0% 0%, rgba(229,168,35,0.03) 0%, transparent 40%), radial-gradient(circle at 100% 100%, rgba(12,35,64,0.02) 0%, transparent 45%)`,
-      backgroundAttachment: 'fixed'
+      position: 'relative',
+      overflowX: 'hidden'
     }}>
       
-      {/* ─── ANIMATIONS & SAAS MEDIA QUERIES ─── */}
+      {/* ─── CURVED DECORATIVE GOLD WAVES (Top-Left & Bottom-Right) ─── */}
+      <svg 
+        style={{ position: 'absolute', top: 0, left: 0, width: '380px', height: '180px', zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} 
+        viewBox="0 0 380 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M0 0 H380 C280 100 130 160 0 130 V0Z" fill={colors.gold} />
+      </svg>
+
+      <svg 
+        style={{ position: 'absolute', bottom: 0, right: 0, width: '420px', height: '220px', zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} 
+        viewBox="0 0 420 220" fill="none" xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M420 220 H0 C100 160 260 100 420 0 V220Z" fill={colors.gold} />
+      </svg>
+
+      {/* ─── STYLES & MEDIA QUERIES ─── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap');
         
         .header-pad { padding: 18px 80px; }
         .logo-img { height: 48px; }
         .univ-text { font-size: 20px; display: block; }
-        .hero-banner { display: flex; align-items: center; justify-content: space-between; gap: 64px; max-width: 1200px; margin: 0 auto; padding: 80px 40px; box-sizing: border-box; }
-        .hero-left { flex: 1.1; display: flex; justify-content: center; align-items: center; position: relative; }
-        .hero-right { flex: 0.9; text-align: left; }
-        .hero-h2 { font-size: 48px; line-height: 1.15; }
-        .hero-p { font-size: 17px; }
-        .main-container { max-width: 1200px; margin: 0 auto 100px; width: 100%; padding: 0 40px; box-sizing: border-box; }
+        .hero-banner { display: flex; align-items: center; justify-content: space-between; gap: 64px; max-width: 1200px; margin: 0 auto; padding: 100px 40px; box-sizing: border-box; position: relative; z-index: 1; }
+        .hero-left { flex: 0.95; text-align: left; }
+        .hero-right { flex: 1.05; display: flex; justify-content: center; align-items: center; }
+        .hero-h2 { font-size: 44px; line-height: 1.1; }
+        .hero-p { font-size: 16px; }
+        .main-container { max-width: 1200px; margin: 0 auto 120px; width: 100%; padding: 0 40px; box-sizing: border-box; position: relative; z-index: 1; }
         
-        /* Floating illustration animation */
+        /* Floating illustration elements */
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(0.5deg); }
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
         }
         .animate-float { animation: float 6s ease-in-out infinite; }
         
@@ -183,14 +198,14 @@ export default function LandingPage({ navigate }) {
 
         .card-premium { 
           background-color: ${colors.white}; 
-          border-radius: 20px; 
-          box-shadow: 0 10px 30px -10px ${colors.shadow}; 
+          border-radius: 16px; 
+          box-shadow: 0 10px 40px -10px ${colors.shadow}; 
           border: 1px solid ${colors.border}; 
           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .card-premium:hover { 
           transform: translateY(-4px); 
-          box-shadow: 0 20px 40px -15px rgba(12, 35, 64, 0.12);
+          box-shadow: 0 20px 40px -15px rgba(12, 35, 64, 0.1);
           border-color: rgba(12, 35, 64, 0.1);
         }
         
@@ -198,18 +213,18 @@ export default function LandingPage({ navigate }) {
           background-color: ${colors.white};
           color: ${colors.textMuted};
           border: 1px solid ${colors.border};
-          padding: 8px 16px;
+          padding: 8px 18px;
           font-size: 13px;
-          fontWeight: 600;
-          borderRadius: 30px;
+          font-weight: 600;
+          border-radius: 6px;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .pill-btn.active {
-          background-color: ${colors.navy};
+          background-color: ${colors.gold};
           color: ${colors.white};
-          border-color: ${colors.navy};
-          box-shadow: 0 4px 10px rgba(12, 35, 64, 0.15);
+          border-color: ${colors.gold};
+          box-shadow: 0 4px 12px rgba(229, 168, 35, 0.25);
         }
         .pill-btn:hover:not(.active) {
           background-color: #F1F5F9;
@@ -217,20 +232,24 @@ export default function LandingPage({ navigate }) {
           border-color: #CBD5E1;
         }
 
-        .btn-lift {
+        .btn-rectangular {
+          border-radius: 6px;
           transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
         }
-        .btn-lift:hover {
+        .btn-rectangular:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(12, 35, 64, 0.2);
+          box-shadow: 0 6px 15px rgba(12, 35, 64, 0.15);
           opacity: 0.95;
         }
 
         @media (max-width: 1024px) {
           .header-pad { padding: 18px 40px !important; }
-          .hero-banner { flex-direction: column-reverse; padding: 60px 40px !important; gap: 48px !important; }
-          .hero-left { width: 100%; max-width: 500px; }
-          .hero-right { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; }
+          .hero-banner { flex-direction: column; padding: 60px 40px !important; gap: 48px !important; }
+          .hero-left { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; }
+          .hero-right { width: 100%; max-width: 500px; }
           .hero-p { max-width: 550px; }
           .main-container { padding: 0 40px !important; }
         }
@@ -241,139 +260,180 @@ export default function LandingPage({ navigate }) {
           .univ-text { font-size: 16px !important; }
           .staff-btn-container { display: none !important; }
           .hero-banner { padding: 40px 20px !important; }
-          .hero-h2 { font-size: 36px !important; }
+          .hero-h2 { font-size: 34px !important; }
           .main-container { padding: 0 20px !important; margin-bottom: 60px !important; }
         }
       `}</style>
 
-      {/* ─── STICKY HEADER WITH SLIGHT BLUR ─── */}
+      {/* ─── STICKY HEADER ─── */}
       <header className="header-pad" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
         backdropFilter: 'blur(10px)',
-        borderBottom: `4px solid ${colors.gold}`, 
+        borderBottom: `1px solid ${colors.border}`, 
         display: 'flex', 
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 4px 30px rgba(12, 35, 64, 0.04)',
+        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.02)',
         position: 'sticky',
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1 }}>
           <img src="/ua-logo.png" alt="UA Logo" className="logo-img" />
           <span className="univ-text" style={{ color: colors.navy, fontWeight: 800, letterSpacing: '-0.02em' }}>
             University of the Assumption
           </span>
         </div>
 
-        <div className="staff-btn-container" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="staff-btn-container" style={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
           <button 
             onClick={() => navigate('admin-login')}
-            className="btn-lift"
+            className="btn-rectangular"
             style={{ 
-              backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', 
-              borderRadius: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', 
-              fontWeight: 600, fontSize: '13px', fontFamily: 'inherit'
+              backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 22px', 
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', 
+              fontSize: '12px', fontFamily: 'inherit'
             }}
           >
-            <LogIn size={15} /> Staff Login
+            <LogIn size={14} /> Staff Login
           </button>
         </div>
       </header>
 
-      {/* ─── TWO-COLUMN HERO BANNER WITH FLOATING APP SCREENSHOT ─── */}
-      <div className="hero-banner animate-fadeup" style={{ position: 'relative' }}>
-        {/* Left Column: Floating App Screenshot Showcase */}
+      {/* ─── HERO BANNER (Left: Content, Right: Laptop Mock-up Showcase) ─── */}
+      <div className="hero-banner animate-fadeup">
+        
+        {/* Left Side: Bold Two-Colored Typography & Action Buttons */}
         <div className="hero-left">
-          <div className="animate-float" style={{ position: 'relative', width: '100%', maxWidth: '480px', display: 'flex', justifyContent: 'center' }}>
-            <img 
-              src={bgMain} 
-              alt="BiteCheck Application Screenshot" 
-              style={{ 
-                width: '100%', 
-                height: 'auto', 
-                borderRadius: '16px', 
-                boxShadow: '0 25px 60px -15px rgba(12, 35, 64, 0.2)',
-                border: '4px solid #FFFFFF',
-                outline: '1px solid rgba(12, 35, 64, 0.08)'
-              }} 
-            />
-            {/* Soft decorative background circles */}
-            <div style={{ position: 'absolute', top: '-15px', right: '-15px', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: colors.goldLight, zIndex: -1, opacity: 0.7 }} />
-            <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'rgba(12, 35, 64, 0.04)', zIndex: -1 }} />
-          </div>
-        </div>
-
-        {/* Right Column: Branded Copy & Call to Action */}
-        <div className="hero-right">
-          <span style={{ fontSize: '12px', fontWeight: 800, color: colors.gold, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'block', marginBottom: '14px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: colors.gold, letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: '14px' }}>
             SECURE PORTAL
           </span>
-          <h2 className="hero-h2" style={{ fontWeight: 800, margin: '0 0 20px 0', color: colors.navy, letterSpacing: '-0.03em' }}>
-            Canteen Evaluation System
+          <h2 className="hero-h2" style={{ fontWeight: 900, margin: '0 0 24px 0', letterSpacing: '-0.02em', textTransform: 'uppercase', lineHeight: 1.1 }}>
+            <span style={{ color: colors.navy, display: 'block', fontSize: '38px' }}>Canteen</span>
+            <span style={{ color: colors.gold, display: 'block', fontSize: '52px' }}>Evaluation</span>
+            <span style={{ color: colors.navy, display: 'block', fontSize: '28px', fontWeight: 700, marginTop: '4px' }}>System</span>
           </h2>
-          <p className="hero-p" style={{ fontWeight: 400, lineHeight: 1.62, margin: '0 0 36px 0', color: colors.textMuted }}>
+          <p className="hero-p" style={{ fontWeight: 400, lineHeight: 1.65, margin: '0 0 36px 0', color: colors.textMuted, maxWidth: '480px' }}>
             A secure platform to share your dining experience. All submissions are protected by Ed25519 cryptography.
           </p>
 
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%', justifyContent: 'inherit' }}>
+          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', width: '100%', justifyContent: 'inherit' }}>
             <button 
               onClick={() => navigate('student-login')}
-              className="btn-lift"
+              className="btn-rectangular"
               style={{ 
-                backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '16px 32px', 
-                fontSize: '15px', fontWeight: 600, borderRadius: '30px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                fontFamily: 'inherit'
+                backgroundColor: colors.gold, color: colors.white, border: 'none', padding: '16px 36px', 
+                fontSize: '14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(229, 168, 35, 0.2)'
               }}
             >
-              Start Evaluation <ArrowRight size={18} />
+              Start Evaluation <ArrowRight size={16} />
             </button>
             <button 
               onClick={() => navigate('verify_receipt')}
-              className="btn-lift"
+              className="btn-rectangular"
               style={{ 
-                backgroundColor: colors.white, color: colors.navy, border: `1.5px solid ${colors.navy}`, padding: '16px 30px', 
-                fontSize: '15px', fontWeight: 600, borderRadius: '30px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                backgroundColor: colors.white, color: colors.navy, border: `2px solid ${colors.navy}`, padding: '14px 34px', 
+                fontSize: '14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 fontFamily: 'inherit'
               }}
             >
-              <ShieldCheck size={18} /> Verify Receipt
+              <ShieldCheck size={16} /> Verify Receipt
             </button>
           </div>
         </div>
+
+        {/* Right Side: Laptop Screen Showcase with Floating Elements */}
+        <div className="hero-right">
+          <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
+            
+            {/* CSS-simulated Laptop Screen Mock-up */}
+            <div className="animate-float" style={{ position: 'relative', zIndex: 2 }}>
+              
+              {/* Laptop Screen Frame */}
+              <div style={{ 
+                backgroundColor: colors.white, 
+                borderRadius: '16px 16px 0 0', 
+                border: `8px solid ${colors.navy}`, 
+                borderBottom: 'none',
+                boxShadow: '0 25px 50px -12px rgba(12, 35, 64, 0.15)',
+                overflow: 'hidden',
+                height: '270px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <img src={bgMain} alt="App Screenshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              
+              {/* Laptop Keyboard Base */}
+              <div style={{ 
+                backgroundColor: '#CBD5E1', 
+                height: '14px', 
+                borderRadius: '0 0 16px 16px',
+                borderBottom: '4px solid #94A3B8',
+                boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+              }}></div>
+
+            </div>
+
+            {/* SaaS-style Decorative Floating Badge */}
+            <div className="animate-float" style={{ 
+              position: 'absolute', top: '-24px', left: '20px', 
+              backgroundColor: colors.gold, color: colors.white, 
+              padding: '8px 16px', borderRadius: '30px', 
+              fontSize: '12px', fontWeight: 700, 
+              boxShadow: '0 8px 20px rgba(229, 168, 35, 0.25)', 
+              zIndex: 3, display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+              <ShieldCheck size={14} /> Cryptographic Seal Active
+            </div>
+
+            {/* Floating rating star elements */}
+            <div className="animate-float" style={{ position: 'absolute', top: '20px', right: '-16px', zIndex: 1, animationDelay: '1s' }}>
+              <Star size={26} fill={colors.gold} color={colors.gold} style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} />
+            </div>
+            <div className="animate-float" style={{ position: 'absolute', bottom: '30px', left: '-20px', zIndex: 1, animationDelay: '2s' }}>
+              <Star size={18} fill={colors.gold} color={colors.gold} style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} />
+            </div>
+            <div className="animate-float" style={{ position: 'absolute', bottom: '60px', right: '-24px', zIndex: 1, animationDelay: '1.5s' }}>
+              <MessageSquare size={22} color={colors.gold} fill={colors.goldLight} style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))' }} />
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
-      {/* ─── MAIN CONTENT AREA ─── */}
+      {/* ─── MAIN CONTENT ─── */}
       <main className="main-container animate-fadeup">
         
-        {/* Error warning notification if failed loading */}
+        {/* Error warning box */}
         {error && (
-          <div style={{ backgroundColor: '#FEF2F2', color: '#EF4444', padding: '14px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 500, marginBottom: '32px', border: '1px solid #FCA5A5', animation: 'fadeUp 0.3s ease' }}>
+          <div style={{ backgroundColor: '#FEF2F2', color: '#EF4444', padding: '14px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 500, marginBottom: '32px', border: '1px solid #FCA5A5', zIndex: 1 }}>
             {error}
           </div>
         )}
 
-        {/* Canteen Overall Statistics Card Block */}
+        {/* TOP LAYOUT: Feedback info & Overall Scorecard */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '60px' }}>
           
-          {/* Action Callout details panel */}
+          {/* Action details card */}
           <div className="card-premium" style={{ padding: '36px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', justifyContent: 'center' }}>
             <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '50%', color: colors.navy, marginBottom: '20px' }}>
               <ClipboardEdit size={28} />
             </div>
-            
-            <h3 style={{ margin: 0, color: colors.navy, fontWeight: 800, fontSize: '20px', letterSpacing: '-0.02em', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, color: colors.navy, fontWeight: 800, fontSize: '18px', letterSpacing: '-0.01em', marginBottom: '10px' }}>
               Submit Your Feedback
             </h3>
-            
             <p style={{ color: colors.textMuted, fontSize: '14px', lineHeight: 1.6, marginBottom: '0', maxWidth: '300px' }}>
               Rate your meal and help us improve campus dining. Your review is digitally signed for authenticity.
             </p>
           </div>
 
-          {/* Canteen Category Scorecard Widget */}
+          {/* Canteen category scorecard widget */}
           <div className="card-premium" style={{ padding: '36px 32px' }}>
             <h3 style={{ margin: 0, color: colors.navy, fontWeight: 800, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: `1.5px solid ${colors.border}`, paddingBottom: '16px', marginBottom: '20px' }}>
               <UtensilsCrossed size={18} color={colors.gold} /> Canteen Scorecard
@@ -413,7 +473,7 @@ export default function LandingPage({ navigate }) {
 
         </div>
 
-        {/* ─── COUNTERS DASHBOARD ─── */}
+        {/* ─── DASHBOARD METRICS ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '80px' }}>
           <div className="card-premium" style={{ padding: '24px 28px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ backgroundColor: '#EFF6FF', padding: '12px', borderRadius: '50%', color: '#3B82F6' }}><MessageSquare size={20} /></div>
@@ -438,7 +498,7 @@ export default function LandingPage({ navigate }) {
           </div>
         </div>
 
-        {/* ─── ACTIVE FOOD STALLS GRID ─── */}
+        {/* ─── DYNAMIC FOOD STALLS GRID ─── */}
         <section style={{ marginBottom: '80px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px', marginBottom: '32px', borderBottom: `1.5px solid ${colors.border}`, paddingBottom: '20px' }}>
             <div>
@@ -447,7 +507,7 @@ export default function LandingPage({ navigate }) {
             </div>
             
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', width: '100%', maxWidth: '580px', justifyContent: 'flex-end' }}>
-              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: colors.white, borderRadius: '30px', padding: '0 16px', height: '40px', border: `1px solid ${colors.border}`, flex: 1, minWidth: '200px', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: colors.white, borderRadius: '6px', padding: '0 16px', height: '40px', border: `1px solid ${colors.border}`, flex: 1, minWidth: '200px', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
                 <Search size={15} color={colors.textMuted} style={{ marginRight: '8px' }} />
                 <input type="text" placeholder="Search stall name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '13px', color: colors.text }} />
               </div>
@@ -468,7 +528,7 @@ export default function LandingPage({ navigate }) {
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px', color: colors.textMuted }}>Loading canteen stalls...</div>
           ) : filteredStalls.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px', backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, color: colors.textMuted, boxShadow: '0 4px 10px rgba(0,0,0,0.01)' }}>
+            <div style={{ textAlign: 'center', padding: '60px', backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, color: colors.textMuted }}>
               No food stalls found matching your criteria.
             </div>
           ) : (
@@ -497,7 +557,7 @@ export default function LandingPage({ navigate }) {
                     </div>
                     <div style={{ padding: '20px' }}>
                       <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.gold, fontWeight: 800 }}>{getStallCategory(stall.name)}</span>
-                      <h4 style={{ margin: '4px 0 0 0', color: colors.navy, fontWeight: 800, fontSize: '16px', letterSpacing: '-0.01em' }}>{stall.name}</h4>
+                      <h4 style={{ margin: '4px 0 0 0', color: colors.navy, fontWeight: 800, fontSize: '16px' }}>{stall.name}</h4>
                     </div>
                   </div>
                 );
@@ -512,9 +572,9 @@ export default function LandingPage({ navigate }) {
           backgroundColor: colors.navy, 
           color: colors.white, 
           padding: '56px 40px', 
-          borderRadius: '24px', 
+          borderRadius: '16px', 
           borderLeft: `6px solid ${colors.gold}`,
-          boxShadow: '0 20px 45px -10px rgba(12, 35, 64, 0.3)'
+          boxShadow: '0 20px 45px -10px rgba(12, 35, 64, 0.25)'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '44px' }}>
             <h2 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 10px 0', letterSpacing: '-0.02em' }}>How Canteen Evaluation is Kept Secure</h2>
@@ -529,7 +589,7 @@ export default function LandingPage({ navigate }) {
             ].map((item) => {
               const IconComp = item.icon;
               return (
-                <div key={item.step} style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '28px', borderRadius: '16px' }}>
+                <div key={item.step} style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '28px', borderRadius: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
                     <div style={{ backgroundColor: colors.goldLight, color: colors.navy, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '15px' }}>{item.step}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -580,7 +640,7 @@ export default function LandingPage({ navigate }) {
       {/* ─── STALL DETAILS MODAL overlay ─── */}
       {selectedStall && modalDetails && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ backgroundColor: colors.white, borderRadius: '20px', maxWidth: '580px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'fadeUp 0.3s ease', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: colors.white, borderRadius: '16px', maxWidth: '580px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'fadeUp 0.3s ease', overflow: 'hidden' }}>
             
             {/* Header */}
             <div style={{ backgroundColor: colors.navy, color: colors.white, padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `4px solid ${colors.gold}` }}>
@@ -613,7 +673,7 @@ export default function LandingPage({ navigate }) {
                   ].map((item) => {
                     const score = modalDetails.scores[item.key] || 0;
                     return (
-                      <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg, padding: '10px 14px', borderRadius: '8px' }}>
+                      <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg, padding: '10px 14px', borderRadius: '6px' }}>
                         <span style={{ fontSize: '12px', fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ fontSize: '12px', fontWeight: 700, color: colors.navy }}>{score}/5</span>
                       </div>
@@ -648,7 +708,7 @@ export default function LandingPage({ navigate }) {
 
             {/* Footer */}
             <div style={{ padding: '20px 32px', borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#FAFAFA' }}>
-              <button onClick={() => setSelectedStall(null)} className="btn-lift" style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '30px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={() => setSelectedStall(null)} className="btn-rectangular" style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 22px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Close Details
               </button>
             </div>
@@ -658,7 +718,17 @@ export default function LandingPage({ navigate }) {
       )}
 
       {/* ─── FOOTER ─── */}
-      <footer style={{ backgroundColor: colors.navy, color: colors.white, padding: '48px 20px', textAlign: 'center', fontSize: '14px', marginTop: 'auto', borderTop: `4px solid ${colors.gold}` }}>
+      <footer style={{ 
+        backgroundColor: colors.navy, 
+        color: colors.white, 
+        padding: '56px 20px', 
+        textAlign: 'center', 
+        fontSize: '14px', 
+        marginTop: 'auto', 
+        borderTop: `4px solid ${colors.gold}`,
+        position: 'relative',
+        zIndex: 1
+      }}>
         <p style={{ margin: 0, fontWeight: 500 }}>© 2026 University of the Assumption. All Rights Reserved.</p>
         <p style={{ margin: '8px 0 0 0', color: '#94A3B8', fontSize: '12px' }}>Cryptographically Secured EdDSA System</p>
       </footer>
