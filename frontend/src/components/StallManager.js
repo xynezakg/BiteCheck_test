@@ -257,40 +257,6 @@ export default function StallManager() {
               />
             </div>
 
-            {/* Canteen Group Selector */}
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>
-                Canteen Group <span style={{ fontSize: '11px', fontWeight: 500, color: colors.textMuted }}>(determines which students see this stall)</span>
-              </label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[
-                  { value: '', label: 'All Students', desc: 'Visible to everyone' },
-                  { value: 'highschool', label: 'High School', desc: 'JHS & SHS only' },
-                  { value: 'college', label: 'College', desc: 'College students only' },
-                ].map(opt => {
-                  const isSel = newCanteenGroup === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setNewCanteenGroup(opt.value)}
-                      style={{
-                        flex: '1 1 0', minWidth: '90px', padding: '10px 8px', borderRadius: '8px',
-                        border: `1.5px solid ${isSel ? colors.navy : colors.border}`,
-                        background: isSel ? colors.navy : colors.white,
-                        color: isSel ? colors.white : colors.textMuted,
-                        fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s',
-                        textAlign: 'center', lineHeight: 1.4,
-                      }}
-                    >
-                      <div>{opt.label}</div>
-                      <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '2px' }}>{opt.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Canteen Group <span style={{ color: colors.red }}>*</span></label>
               <select
