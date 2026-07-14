@@ -39,14 +39,21 @@ export default function AdminDashboard({ navigate }) {
   const [rankingFilter, setRankingFilter] = useState("Overall");
 
   useEffect(() => {
+    const token = localStorage.getItem('ua_token');
+    const userStr = localStorage.getItem('ua_user');
+    
+    if (!token || !userStr) {
+      window.location.href = '/';
+      return;
+    }
+
     try {
-      const userStr = localStorage.getItem('ua_user');
-      if (userStr) {
-        const u = JSON.parse(userStr);
-        setUserRole(u.role || 'admin');
-        setUserName(u.full_name || 'UA Admin');
-      }
-    } catch (e) { }
+      const u = JSON.parse(userStr);
+      setUserRole(u.role || 'admin');
+      setUserName(u.full_name || 'UA Admin');
+    } catch (e) {
+      window.location.href = '/';
+    }
   }, []);
 
   // State for the Stall Filter dropdown
@@ -70,6 +77,11 @@ export default function AdminDashboard({ navigate }) {
       setCriteria(data);
     } catch (err) {
       console.error("Failed to load criteria:", err);
+      if (err.message && (err.message.includes("Unauthorized") || err.message.includes("expired") || err.message.includes("login"))) {
+        localStorage.removeItem('ua_token');
+        localStorage.removeItem('ua_user');
+        window.location.href = '/';
+      }
     } finally {
       setLoadingCriteria(false);
     }
@@ -90,6 +102,11 @@ export default function AdminDashboard({ navigate }) {
     } catch (err) {
       console.error("Failed to load users:", err);
       setUsersError(err.message || "Failed to load registered users.");
+      if (err.message && (err.message.includes("Unauthorized") || err.message.includes("expired") || err.message.includes("login"))) {
+        localStorage.removeItem('ua_token');
+        localStorage.removeItem('ua_user');
+        setTimeout(() => { window.location.href = '/'; }, 2000);
+      }
     } finally {
       setLoadingUsers(false);
     }
