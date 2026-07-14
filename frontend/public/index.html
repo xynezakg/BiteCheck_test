@@ -12,7 +12,69 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <style>
+      .splash-container {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #0C2340;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Inter', sans-serif;
+        color: #FFFFFF;
+        z-index: 99999;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .splash-logo {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        animation: pulse 2s infinite ease-in-out;
+      }
+      .splash-title {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+        letter-spacing: 0.02em;
+        color: #FFFFFF;
+      }
+      .splash-subtitle {
+        font-size: 13px;
+        font-weight: 600;
+        color: #E5A823; /* UA Gold */
+        margin: 0 0 40px 0;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .splash-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(229, 168, 35, 0.15);
+        border-radius: 50%;
+        border-top-color: #E5A823; /* UA Gold */
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.04); opacity: 0.95; }
+      }
+    </style>
+    <div class="splash-container">
+      <img class="splash-logo" src="%PUBLIC_URL%/ua-logo.png" alt="University of the Assumption Logo" />
+      <h1 class="splash-title">University of the Assumption</h1>
+      <p class="splash-subtitle">Canteen Evaluation System</p>
+      <div class="splash-spinner"></div>
+    </div>
+  </div>
 </body>
 
 </html>
