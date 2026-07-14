@@ -9,10 +9,22 @@ const app = express();
 
 // Set up CORS - Strictly allow only your frontend URLs
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'https://bite-check-frontend.vercel.app'
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = origin === 'http://localhost:3000' || 
+                          origin.startsWith('http://localhost:') || 
+                          origin.endsWith('.vercel.app') || 
+                          origin.includes('vercel.app');
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS] Blocked request from origin: ${origin}`);
+            callback(null, false);
+        }
+    },
     credentials: true
 }));
 

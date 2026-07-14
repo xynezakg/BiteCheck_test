@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser } from "../api";
+import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
@@ -55,15 +55,41 @@ export default function AdminDashboard({ navigate }) {
   const [demographics, setDemographics] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
+
+  // Criteria management state
+  const [criteria, setCriteria] = useState([]);
+  const [loadingCriteria, setLoadingCriteria] = useState(false);
+  const [newCriteriaName, setNewCriteriaName] = useState("");
+
+  const loadCriteria = async () => {
+    try {
+      setLoadingCriteria(true);
+      const data = await fetchAllCriteria();
+      setCriteria(data);
+    } catch (err) {
+      console.error("Failed to load criteria:", err);
+    } finally {
+      setLoadingCriteria(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeMenu === 'criteria') {
+      loadCriteria();
+    }
+  }, [activeMenu]);
 
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
+      setUsersError(null);
       const data = await fetchUsers();
       setUsersList(data);
     } catch (err) {
       console.error("Failed to load users:", err);
+      setUsersError(err.message || "Failed to load registered users.");
     } finally {
       setLoadingUsers(false);
     }
@@ -87,6 +113,54 @@ export default function AdminDashboard({ navigate }) {
           showCustomModal("Success", `User ${fullName} has been successfully deleted.`, "success");
         } catch (err) {
           showCustomModal("Error", err.message || "Failed to delete user.", "error");
+        }
+      }
+    );
+  };
+
+  const handleCreateCriteria = async (e) => {
+    e.preventDefault();
+    if (!newCriteriaName.trim()) return;
+
+    const name = newCriteriaName.trim();
+    // eslint-disable-next-line no-useless-escape
+    if (/[\[\]:|/]/g.test(name)) {
+      showCustomModal("Validation Error", "Criteria name cannot contain invalid characters: [ ] : | /", "error");
+      return;
+    }
+
+    try {
+      const added = await createCriteria(name);
+      setCriteria(prev => [...prev, added]);
+      setNewCriteriaName("");
+      showCustomModal("Success", `Criterion "${name}" has been created successfully.`, "success");
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to create criterion.", "error");
+    }
+  };
+
+  const handleToggleCriteria = async (id, name, currentActive) => {
+    const nextActive = !currentActive;
+    try {
+      const updated = await updateCriteria(id, nextActive);
+      setCriteria(prev => prev.map(c => c.id === id ? updated : c));
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to toggle criterion status.", "error");
+    }
+  };
+
+  const handleDeleteCriteria = (id, name) => {
+    showCustomModal(
+      "Confirm Deletion",
+      `Are you sure you want to permanently delete the criterion "${name}"? This cannot be undone.`,
+      "confirm",
+      async () => {
+        try {
+          await deleteCriteria(id);
+          setCriteria(prev => prev.filter(c => c.id !== id));
+          showCustomModal("Success", `Criterion "${name}" deleted successfully.`, "success");
+        } catch (err) {
+          showCustomModal("Error", err.message || "Failed to delete criterion.", "error");
         }
       }
     );
@@ -199,26 +273,35 @@ export default function AdminDashboard({ navigate }) {
 
   const dominantRating = pieData.length > 0 ? pieData.reduce((best, current) => current.value > best.value ? current : best, pieData[0]) : { star: 'N/A' };
 
-  const categoryTotals = { Food: 0, Service: 0, Staff: 0, Clean: 0, Value: 0 };
+  const categoryTotals = {};
+  const categoryCounts = {};
   let count = 0;
 
   dashboardFeedbacks.forEach(f => {
-    const match = f?.comment?.match(/\[Scores -> Food: (\d)\/5 \| Service: (\d)\/5 \| Staff: (\d)\/5 \| Clean: (\d)\/5 \| Value: (\d)\/5\]/);
-    if (match) {
-      categoryTotals.Food += parseInt(match[1]); categoryTotals.Service += parseInt(match[2]);
-      categoryTotals.Staff += parseInt(match[3]); categoryTotals.Clean += parseInt(match[4]);
-      categoryTotals.Value += parseInt(match[5]); count++;
+    const scoresMatch = f?.comment?.match(/\[Scores -> (.*?)\]/);
+    if (scoresMatch) {
+      count++;
+      const scoresStr = scoresMatch[1];
+      const parts = scoresStr.split('|');
+      parts.forEach(part => {
+        const subMatch = part.trim().match(/^(.*?):\s*(\d)\/5$/);
+        if (subMatch) {
+          const rawName = subMatch[1].trim();
+          const name = rawName === 'Clean' ? 'Cleanliness' : rawName;
+          const val = parseInt(subMatch[2]);
+          categoryTotals[name] = (categoryTotals[name] || 0) + val;
+          categoryCounts[name] = (categoryCounts[name] || 0) + 1;
+        }
+      });
     }
   });
 
-  const barData = [
-    { name: 'Food', score: count ? Number((categoryTotals.Food / count).toFixed(1)) : 0 },
-    { name: 'Service', score: count ? Number((categoryTotals.Service / count).toFixed(1)) : 0 },
-    { name: 'Staff', score: count ? Number((categoryTotals.Staff / count).toFixed(1)) : 0 },
-    { name: 'Clean', score: count ? Number((categoryTotals.Clean / count).toFixed(1)) : 0 },
-    { name: 'Value', score: count ? Number((categoryTotals.Value / count).toFixed(1)) : 0 },
-  ];
-  const topCategory = count > 0 ? [...barData].sort((a, b) => b.score - a.score)[0] : { name: "N/A", score: 0 };
+  const barData = Object.keys(categoryTotals).map(name => ({
+    name,
+    score: categoryCounts[name] ? Number((categoryTotals[name] / categoryCounts[name]).toFixed(1)) : 0
+  })).sort((a, b) => b.score - a.score);
+
+  const topCategory = barData.length > 0 ? barData[0] : { name: "N/A", score: 0 };
 
   // Calculate Stall Comparison Chart Data
   const stallScores = {};
@@ -664,6 +747,7 @@ export default function AdminDashboard({ navigate }) {
             <>
               <MenuItem id="stalls" icon={Store} label="Manage Stalls" />
               <MenuItem id="users" icon={Users} label="User Management" />
+              <MenuItem id="criteria" icon={Star} label="Manage Criteria" />
             </>
           )}
 
@@ -829,6 +913,12 @@ export default function AdminDashboard({ navigate }) {
               </p>
             </div>
 
+            {usersError && (
+              <div style={{ backgroundColor: '#FEE2E2', border: `1px solid ${colors.danger}`, color: colors.danger, padding: '16px 20px', borderRadius: '12px', marginBottom: '24px', fontSize: '14px', fontWeight: 600 }}>
+                ⚠️ {usersError}
+              </div>
+            )}
+
             {/* Search Filter */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
@@ -948,6 +1038,113 @@ export default function AdminDashboard({ navigate }) {
             </div>
 
             <StallManager />
+          </div>
+        )}
+
+        {/* ---------------- VIEW: MANAGE CRITERIA ---------------- */}
+        {activeMenu === "criteria" && userRole !== 'viewer' && (
+          <div style={{ animation: 'fadeUp 0.4s ease' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <h1 style={{ fontSize: '32px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+                Evaluation <span style={{ color: colors.gold }}>Criteria</span>
+              </h1>
+              <p style={{ color: colors.textMuted, margin: 0, fontSize: '16px' }}>
+                Create, enable, or disable evaluation categories displayed on student feedback forms.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'flex-start' }}>
+              
+              {/* Form Card */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 20px 0' }}>Add New Criterion</h3>
+                <form onSubmit={handleCreateCriteria} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '8px', letterSpacing: '0.05em' }}>CRITERION NAME</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Ambiance, Cleanliness" 
+                      value={newCriteriaName} 
+                      onChange={(e) => setNewCriteriaName(e.target.value)}
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', color: colors.text, outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }} 
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '12px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
+                  >
+                    Create Criterion
+                  </button>
+                </form>
+              </div>
+
+              {/* List Card */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                <div style={{ padding: '24px 32px', borderBottom: `1px solid ${colors.border}` }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: 0 }}>Registered Criteria</h3>
+                </div>
+
+                {loadingCriteria ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px', color: colors.textMuted }}>
+                    <Loader2 className="animate-spin" size={24} style={{ marginRight: '10px' }} />
+                    Loading criteria list...
+                  </div>
+                ) : criteria.length === 0 ? (
+                  <div style={{ padding: '80px', textAlign: 'center', color: colors.textMuted }}>No evaluation criteria configured.</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#F8FAFC', borderBottom: `1px solid ${colors.border}` }}>
+                          <th style={{ padding: '16px 32px', fontSize: '11px', fontWeight: 700, color: colors.textMuted, letterSpacing: '0.05em' }}>CRITERION NAME</th>
+                          <th style={{ padding: '16px 32px', fontSize: '11px', fontWeight: 700, color: colors.textMuted, letterSpacing: '0.05em', textAlign: 'center' }}>STATUS</th>
+                          <th style={{ padding: '16px 32px', fontSize: '11px', fontWeight: 700, color: colors.textMuted, letterSpacing: '0.05em', textAlign: 'right' }}>ACTIONS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {criteria.map((item) => (
+                          <tr key={item.id} style={{ borderBottom: `1px solid ${colors.border}`, transition: 'background-color 0.15s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                            <td style={{ padding: '20px 32px', fontWeight: 600, color: colors.navy, fontSize: '15px' }}>{item.name}</td>
+                            <td style={{ padding: '20px 32px', textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleToggleCriteria(item.id, item.name, item.is_active)}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '20px',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  border: 'none',
+                                  transition: 'all 0.2s',
+                                  backgroundColor: item.is_active ? '#ECFDF5' : '#F3F4F6',
+                                  color: item.is_active ? '#059669' : '#6B7280'
+                                }}
+                              >
+                                {item.is_active ? "Active" : "Disabled"}
+                              </button>
+                            </td>
+                            <td style={{ padding: '20px 32px', textAlign: 'right' }}>
+                              <button 
+                                onClick={() => handleDeleteCriteria(item.id, item.name)}
+                                style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+            </div>
           </div>
         )}
 
