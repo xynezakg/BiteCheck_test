@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const cloudinary = require('cloudinary').v2;
 
 const {
@@ -12,7 +13,7 @@ const {
     getFeedbacksByStallName, deleteFeedbacksByStallName
 } = require('./db');
 const { verifySignature } = require('./eddsa');
-const { registerUser, loginUser, requireAuth } = require('./auth');
+const { registerUser, loginUser, requireAuth, googleLogin, googleOnboarding } = require('./auth');
 const { generateStoreReport, analyzeFeedbackData } = require('./reportGenerator');
 const { sendEmail } = require('./email');
 const bcrypt = require('bcrypt');
@@ -234,6 +235,8 @@ const getResetPasswordPage = (token, errorMsg = "") => {
 // --- IDENTITY & AUTH ROUTES ---
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.post('/auth/google', googleLogin);
+router.post('/auth/google/onboarding', googleOnboarding);
 
 // POST `/users/forgot-password`
 router.post('/users/forgot-password', async (req, res) => {
@@ -713,6 +716,38 @@ router.get('/stalls', async (req, res) => {
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/stalls/:id/qrcode', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const stalls = await getAllStalls();
+        const stall = stalls.find(s => s.id == id);
+        
+        if (!stall) {
+            return res.status(404).json({ error: 'Stall not found' });
+        }
+
+        const frontendUrl = process.env.FRONTEND_URL || 'https://bite-check-frontend.vercel.app';
+        const evaluationUrl = `${frontendUrl}/?stall=${encodeURIComponent(stall.name)}`;
+
+        // Generate the QR Code buffer in PNG format
+        const qrBuffer = await QRCode.toBuffer(evaluationUrl, {
+            type: 'png',
+            margin: 2,
+            width: 350,
+            color: {
+                dark: '#0C2340',  // University Navy
+                light: '#FFFFFF'  // White background
+            }
+        });
+
+        res.type('png');
+        res.send(qrBuffer);
+    } catch (err) {
+        console.error("Failed to generate QR Code:", err);
+        res.status(500).json({ error: 'Failed to generate QR Code' });
     }
 });
 

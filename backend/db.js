@@ -72,6 +72,7 @@ async function initDB() {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;`);
 
         // Canteen group column for stalls (highschool | college | null = general)
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS canteen_group VARCHAR(20);`);

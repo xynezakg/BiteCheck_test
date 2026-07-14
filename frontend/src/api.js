@@ -240,3 +240,25 @@ export const deleteCriteria = async (id) => {
     if (!response.ok) throw new Error(data.error || 'Failed to delete criterion');
     return data;
 };
+
+export const loginWithGoogle = async (idToken) => {
+    const response = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Google login failed');
+    return data;
+};
+
+export const completeGoogleOnboarding = async ({ idToken, ua_id, academic_level }) => {
+    const response = await fetch(`${API_URL}/auth/google/onboarding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, ua_id, academic_level })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Google onboarding failed');
+    return data;
+};

@@ -1,10 +1,12 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const { pool } = require('./db');
 const { sendEmail } = require('./email');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ua_super_secret_crypto_key_2026';
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Regex to strictly enforce exactly 10 digits (0-9) and nothing else
 const isValidUaId = (id) => /^\d{10}$/.test(id);
@@ -129,6 +131,122 @@ const loginUser = async (req, res) => {
     }
 };
 
+const googleLogin = async (req, res) => {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ error: 'Google ID token is required.' });
+
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+
+        // Restrict to @ua.edu.ph
+        if (!email || !email.endsWith('@ua.edu.ph')) {
+            return res.status(403).json({ error: 'Access denied. You must use an official @ua.edu.ph email address.' });
+        }
+
+        // Check if user exists
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const user = result.rows[0];
+
+        if (!user) {
+            // New user -> requires onboarding
+            return res.json({ requiresOnboarding: true, email, name });
+        }
+
+        // Returning user -> verify if they have student ID
+        if (!user.ua_id) {
+            return res.json({ requiresOnboarding: true, email, name });
+        }
+
+        // Issue signed local JWT
+        const token = jwt.sign(
+            { id: user.id, ua_id: user.ua_id, role: user.role, full_name: user.full_name, academic_level: user.academic_level || null, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        res.json({
+            message: 'Login successful',
+            token,
+            user: { ua_id: user.ua_id, full_name: user.full_name, role: user.role, academic_level: user.academic_level || null }
+        });
+
+    } catch (err) {
+        console.error("Google authentication error:", err);
+        res.status(401).json({ error: 'Invalid Google authentication token.' });
+    }
+};
+
+const googleOnboarding = async (req, res) => {
+    const { idToken, ua_id, academic_level } = req.body;
+    if (!idToken || !ua_id || !academic_level) {
+        return res.status(400).json({ error: 'ID token, Student ID, and academic level are required.' });
+    }
+
+    if (!isValidUaId(ua_id)) {
+        return res.status(400).json({ error: 'Invalid format. UA ID must be exactly 10 digits with no dashes.' });
+    }
+
+    const validLevels = ['JHS', 'SHS', 'College'];
+    if (!validLevels.includes(academic_level)) {
+        return res.status(400).json({ error: 'Academic level must be JHS, SHS, or College.' });
+    }
+
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+
+        // Restrict to @ua.edu.ph
+        if (!email || !email.endsWith('@ua.edu.ph')) {
+            return res.status(403).json({ error: 'Access denied. You must use an official @ua.edu.ph email address.' });
+        }
+
+        // Ensure Student ID is unique
+        const checkId = await pool.query('SELECT * FROM users WHERE ua_id = $1', [ua_id]);
+        if (checkId.rows.length > 0) {
+            return res.status(400).json({ error: 'This Student ID is already registered.' });
+        }
+
+        // Ensure Email is unique (and not already taken by standard signup)
+        const checkEmail = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (checkEmail.rows.length > 0) {
+            return res.status(400).json({ error: 'This email is already registered.' });
+        }
+
+        // Create new user (passwordless OAuth user)
+        const result = await pool.query(
+            'INSERT INTO users (ua_id, full_name, role, password_hash, academic_level, email, is_email_verified) VALUES ($1, $2, \'student\', NULL, $3, $4, TRUE) RETURNING id, ua_id, full_name, role, academic_level, email',
+            [ua_id, name, academic_level, email]
+        );
+        const user = result.rows[0];
+
+        // Issue signed local JWT
+        const token = jwt.sign(
+            { id: user.id, ua_id: user.ua_id, role: user.role, full_name: user.full_name, academic_level: user.academic_level || null, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        res.json({
+            message: 'Onboarding successful',
+            token,
+            user: { ua_id: user.ua_id, full_name: user.full_name, role: user.role, academic_level: user.academic_level || null }
+        });
+
+    } catch (err) {
+        console.error("Google onboarding error:", err);
+        res.status(401).json({ error: 'Google onboarding failed.' });
+    }
+};
+
 // --- 3. SECURITY MIDDLEWARE ---
 const requireAuth = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -148,4 +266,4 @@ const requireAuth = (req, res, next) => {
     }
 };
 
-module.exports = { registerUser, loginUser, requireAuth };
+module.exports = { registerUser, loginUser, requireAuth, googleLogin, googleOnboarding };

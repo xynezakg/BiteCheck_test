@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { loginUser, registerUser, forgotPassword } from '../api';
-import { Lock, User, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { loginUser, registerUser, forgotPassword, loginWithGoogle, completeGoogleOnboarding } from '../api';
+import { Lock, User, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff, GraduationCap } from 'lucide-react';
 import bgMain from '../Background_img/wmremove-transformed.png';
 
 export default function Login({ navigate }) {
@@ -28,6 +28,98 @@ export default function Login({ navigate }) {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  // Google OAuth Onboarding State
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [googleIdToken, setGoogleIdToken] = useState('');
+  const [onboardingUaId, setOnboardingUaId] = useState('');
+  const [onboardingAcademicLevel, setOnboardingAcademicLevel] = useState('College');
+  const [onboardingError, setOnboardingError] = useState('');
+
+  useEffect(() => {
+    // Dynamic Google OAuth Identity Services Loader
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '1043329061033-t91b1l4l8k31t59l8k31t59l8k31t59l.apps.googleusercontent.com',
+          callback: handleGoogleCredentialResponse
+        });
+        
+        // Render button if element is mounted
+        const btnContainer = document.getElementById('googleSignInBtn');
+        if (btnContainer) {
+          window.google.accounts.id.renderButton(
+            btnContainer,
+            { theme: 'outline', size: 'large', width: '380' }
+          );
+        }
+      }
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup script from DOM on unmount
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLogin]); // Re-run when view mode toggles to ensure DOM target exists
+
+  const handleGoogleCredentialResponse = async (response) => {
+    const token = response.credential;
+    setGoogleIdToken(token);
+    setError('');
+    setLoading(true);
+
+    try {
+      const data = await loginWithGoogle(token);
+      
+      if (data.requiresOnboarding) {
+        setShowOnboarding(true);
+        setLoading(false);
+      } else {
+        localStorage.setItem('ua_token', data.token);
+        localStorage.setItem('ua_user', JSON.stringify(data.user));
+
+        if (data.user.role === 'admin') {
+          navigate('admin');
+        } else {
+          navigate('feedback');
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Google authentication failed');
+      setLoading(false);
+    }
+  };
+
+  const handleOnboardingSubmit = async (e) => {
+    e.preventDefault();
+    setOnboardingError('');
+    setLoading(true);
+
+    try {
+      const data = await completeGoogleOnboarding({
+        idToken: googleIdToken,
+        ua_id: onboardingUaId,
+        academic_level: onboardingAcademicLevel
+      });
+
+      localStorage.setItem('ua_token', data.token);
+      localStorage.setItem('ua_user', JSON.stringify(data.user));
+      setShowOnboarding(false);
+      navigate('feedback');
+    } catch (err) {
+      setOnboardingError(err.message || 'Onboarding failed');
+    } finally {
+      setLoading(false);
+    }
+  };
   const [forgotError, setForgotError] = useState('');
 
   const colors = {
@@ -759,6 +851,17 @@ export default function Login({ navigate }) {
             </button>
           </form>
 
+          {isLogin && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '10px' }}>
+                <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
+                <span style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>OR</span>
+                <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
+              </div>
+              <div id="googleSignInBtn" style={{ width: '100%', minHeight: '44px', display: 'flex', justifyContent: 'center' }} />
+            </>
+          )}
+
           {/* Toggle Sign In / Create Account */}
           <div style={{ textAlign: 'center', marginTop: '20px' }}>
             <span style={{ color: colors.textMuted, fontSize: '14px' }}>
@@ -878,6 +981,61 @@ export default function Login({ navigate }) {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── GOOGLE ONBOARDING MODAL ── */}
+      {showOnboarding && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1002, fontFamily: 'inherit', backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '40px', maxWidth: '440px', width: '90%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', border: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', color: colors.gold }}>
+              <GraduationCap size={44} />
+            </div>
+
+            <h3 style={{ fontSize: '22px', fontWeight: 700, color: colors.navy, marginBottom: '12px' }}>Complete Registration</h3>
+            <p style={{ fontSize: '14px', color: colors.textMuted, marginBottom: '24px', lineHeight: '1.6' }}>
+              First-time logging in with Google? Please provide your Student ID to link your account.
+            </p>
+
+            <form onSubmit={handleOnboardingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+              {onboardingError && (
+                <div style={{ backgroundColor: '#FEF2F2', color: '#EF4444', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 500, border: '1px solid #FCA5A5' }}>
+                  {onboardingError}
+                </div>
+              )}
+              
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', display: 'block', letterSpacing: '0.05em' }}>STUDENT ID NUMBER</label>
+                <input required type="text" placeholder="10-digit Student ID (e.g. 2026123456)"
+                  value={onboardingUaId} onChange={e => setOnboardingUaId(e.target.value)}
+                  style={{ width: '100%', padding: '15px 18px', borderRadius: '10px', border: `1.5px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', display: 'block', letterSpacing: '0.05em' }}>ACADEMIC LEVEL</label>
+                <select 
+                  value={onboardingAcademicLevel} 
+                  onChange={e => setOnboardingAcademicLevel(e.target.value)}
+                  style={{ width: '100%', padding: '15px 18px', borderRadius: '10px', border: `1.5px solid ${colors.border}`, fontSize: '15px', color: colors.text, fontFamily: 'inherit', backgroundColor: colors.white, boxSizing: 'border-box' }}
+                >
+                  <option value="JHS">Junior High School</option>
+                  <option value="SHS">Senior High School</option>
+                  <option value="College">College</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button type="button" onClick={() => { setShowOnboarding(false); setOnboardingError(''); setOnboardingUaId(''); }}
+                  style={{ flex: 1, padding: '12px', backgroundColor: 'transparent', color: colors.navy, border: `1.5px solid ${colors.navy}`, borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}
+                >Cancel</button>
+                <button type="submit" disabled={loading}
+                  style={{ flex: 1, padding: '12px', backgroundColor: colors.navy, color: colors.white, border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}
+                >{loading ? 'Saving...' : 'Register ID'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
