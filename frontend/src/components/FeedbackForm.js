@@ -12,6 +12,7 @@ import bgMain from '../Background_img/wmremove-transformed.png';
 export default function FeedbackForm({ navigate }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ comment: "" });
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const [selectedStall, setSelectedStall] = useState("");
   const [selectedCanteen, setSelectedCanteen] = useState(null);
@@ -94,6 +95,7 @@ export default function FeedbackForm({ navigate }) {
             if (draft.selectedStall) setSelectedStall(draft.selectedStall);
             if (draft.ratings) setRatings(draft.ratings);
             if (draft.comment) setForm({ comment: draft.comment });
+            if (draft.isAnonymous !== undefined) setIsAnonymous(draft.isAnonymous);
             if (draft.step) setStep(draft.step);
             setDraftBanner(true);
             setTimeout(() => setDraftBanner(false), 4000);
@@ -115,10 +117,11 @@ export default function FeedbackForm({ navigate }) {
         selectedStall,
         ratings,
         comment: form.comment,
+        isAnonymous,
         step
       }));
     }
-  }, [selectedStall, ratings, form.comment, step]);
+  }, [selectedStall, ratings, form.comment, isAnonymous, step]);
 
   const colors = {
     navy: '#0C2340',
@@ -190,9 +193,11 @@ export default function FeedbackForm({ navigate }) {
 
     const payloadText = `[Stall: ${selectedStall}] [Scores -> Food: ${ratings.Food}/5 | Service: ${ratings.Service}/5 | Staff: ${ratings.Staff}/5 | Clean: ${ratings.Cleanliness}/5 | Value: ${ratings.Value}/5]\n\n${form.comment}`;
 
+    const displayName = isAnonymous ? "Anonymous Student" : user.full_name;
+
     // Exclude the image attachment from the cryptographic signature calculation
     const payloadToSign = {
-      customer_name: user.full_name,
+      customer_name: displayName,
       rating: overallRating,
       comment: payloadText
     };
@@ -204,7 +209,7 @@ export default function FeedbackForm({ navigate }) {
       const { publicKey, secretKey } = generateKeyPair();
       const publicKeyBase64 = naclUtil.encodeBase64(publicKey);
 
-      setSignMessage(`Signing payload as ${user.full_name}...`);
+      setSignMessage(`Signing payload as ${displayName}...`);
       await new Promise(resolve => setTimeout(resolve, 400));
 
       // Sign the smaller payload
@@ -219,7 +224,8 @@ export default function FeedbackForm({ navigate }) {
         comment: payloadText,
         attachment: imagePreview,
         signature: clientSignature,
-        public_key: publicKeyBase64
+        public_key: publicKeyBase64,
+        is_anonymous: isAnonymous
       };
 
       await submitFeedback(fullPayload);
@@ -694,6 +700,21 @@ export default function FeedbackForm({ navigate }) {
                       </div>
                     </div>
 
+                    <div style={{ backgroundColor: '#F8FAFC', border: `1px solid ${colors.border}`, padding: '16px', borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => setIsAnonymous(!isAnonymous)}>
+                      <input 
+                        type="checkbox" 
+                        checked={isAnonymous} 
+                        onChange={() => {}} // handled by parent div click
+                        style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px', accentColor: colors.navy }} 
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>Submit Anonymously</span>
+                        <span style={{ fontSize: '12px', color: colors.textMuted, marginTop: '2px', lineHeight: 1.4 }}>
+                          Your review will be posted as <strong>"Anonymous Student"</strong> in public feeds. The cryptographic seal remains intact.
+                        </span>
+                      </div>
+                    </div>
+
                     <div>
                       <label style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 600, display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>PHOTO EVIDENCE (OPTIONAL)</label>
                       <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
@@ -793,9 +814,17 @@ export default function FeedbackForm({ navigate }) {
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}`, paddingBottom: '16px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 600, letterSpacing: '0.05em' }}>VERIFIED IDENTITY</span>
-                    <span style={{ fontWeight: 600, fontSize: '14px', color: colors.success, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <CheckCircle2 size={16} /> {user.full_name}
+                    <span style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 600, letterSpacing: '0.05em' }}>SUBMISSION IDENTITY</span>
+                    <span style={{ fontWeight: 600, fontSize: '14px', color: isAnonymous ? colors.textMuted : colors.success, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isAnonymous ? (
+                        <>
+                          <Lock size={16} color={colors.textMuted} /> Anonymous Student
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={16} /> {user.full_name}
+                        </>
+                      )}
                     </span>
                   </div>
 

@@ -359,11 +359,55 @@ router.get('/admin/user-demographics', async (req, res) => {
     }
 });
 
+// --- ADMIN: GET ALL REGISTERED USERS ---
+router.get('/admin/users', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+
+    try {
+        const result = await pool.query(
+            'SELECT id, ua_id, full_name, role, academic_level, email, is_email_verified, created_at FROM users ORDER BY created_at DESC'
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Failed to fetch registered users:", err);
+        res.status(500).json({ error: "Internal server error fetching users." });
+    }
+});
+
+// --- ADMIN: DELETE REGISTERED USER ---
+router.delete('/admin/users/:id', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+
+    const { id } = req.params;
+
+    if (Number(id) === Number(req.user.id)) {
+        return res.status(400).json({ error: "You cannot delete your own admin account!" });
+    }
+
+    try {
+        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, full_name', [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.json({ message: "User deleted successfully", user: result.rows[0] });
+    } catch (err) {
+        console.error("Failed to delete user:", err);
+        res.status(500).json({ error: "Internal server error deleting user." });
+    }
+});
+
 // --- SECURE FEEDBACK ROUTE ---
 router.post('/feedback', requireAuth, async (req, res) => {
-    let { rating, comment, attachment, signature, public_key } = req.body;
+    let { rating, comment, attachment, signature, public_key, is_anonymous } = req.body;
 
-    const customer_name = req.user.full_name;
+    let customer_name = req.user.full_name;
+    if (is_anonymous) {
+        customer_name = "Anonymous Student";
+    }
     const user_id = req.user.id;
 
     rating = Number(rating);

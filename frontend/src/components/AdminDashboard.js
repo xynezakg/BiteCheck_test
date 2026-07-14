@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics } from "../api";
+import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
@@ -53,6 +53,44 @@ export default function AdminDashboard({ navigate }) {
   const [dashboardStallFilter, setDashboardStallFilter] = useState("All");
   const [stallsList, setStallsList] = useState([]);
   const [demographics, setDemographics] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const data = await fetchUsers();
+      setUsersList(data);
+    } catch (err) {
+      console.error("Failed to load users:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeMenu === 'users') {
+      loadUsers();
+    }
+  }, [activeMenu]);
+
+  const handleDeleteUser = (id, fullName) => {
+    showCustomModal(
+      "Confirm User Deletion",
+      `Are you sure you want to permanently delete user ${fullName} (ID: ${id})? This will delete the user account from the Neon database.`,
+      "confirm",
+      async () => {
+        try {
+          await deleteUser(id);
+          setUsersList(prev => prev.filter(u => u.id !== id));
+          showCustomModal("Success", `User ${fullName} has been successfully deleted.`, "success");
+        } catch (err) {
+          showCustomModal("Error", err.message || "Failed to delete user.", "error");
+        }
+      }
+    );
+  };
 
   const isAuditingRef = useRef(isAuditing);
   useEffect(() => { isAuditingRef.current = isAuditing; }, [isAuditing]);
@@ -623,7 +661,10 @@ export default function AdminDashboard({ navigate }) {
           <MenuItem id="records" icon={FileText} label="Safe Records" />
 
           {userRole !== 'viewer' && (
-            <MenuItem id="stalls" icon={Store} label="Manage Stalls" />
+            <>
+              <MenuItem id="stalls" icon={Store} label="Manage Stalls" />
+              <MenuItem id="users" icon={Users} label="User Management" />
+            </>
           )}
 
           <MenuItem id="verify" icon={ShieldCheck} label="Crypto Logs" />
@@ -771,6 +812,124 @@ export default function AdminDashboard({ navigate }) {
               ))}
               {(stallsList.length === 0 || safeFeedbacks.length === 0) && (
                 <div style={{ padding: '40px', textAlign: 'center', color: colors.textMuted }}>No evaluations have been recorded yet to formulate a ranking.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- VIEW: USER MANAGEMENT ---------------- */}
+        {activeMenu === "users" && userRole !== 'viewer' && (
+          <div style={{ animation: 'fadeUp 0.4s ease' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <h1 style={{ fontSize: '32px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+                User <span style={{ color: colors.gold }}>Management</span>
+              </h1>
+              <p style={{ color: colors.textMuted, margin: 0, fontSize: '16px' }}>
+                View, search, and delete registered student and coordinator accounts.
+              </p>
+            </div>
+
+            {/* Search Filter */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+                <Search size={18} color={colors.textMuted} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search users by name, email, or Student ID..." 
+                  value={userSearchTerm} 
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%', padding: '14px 16px 14px 48px', borderRadius: '12px',
+                    border: `1px solid ${colors.border}`, backgroundColor: '#FFFFFF',
+                    fontSize: '15px', outline: 'none', transition: 'border-color 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = colors.navy}
+                  onBlur={(e) => e.target.style.borderColor = colors.border}
+                />
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+              {loadingUsers ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px 0', color: colors.textMuted }}>
+                  <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Fetching users from Neon database...</span>
+                </div>
+              ) : (
+                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>UA ID / STUDENT ID</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>FULL NAME</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>EMAIL ADDRESS</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>ROLE</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>ACADEMIC LEVEL</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'left', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>EMAIL STATUS</th>
+                      <th style={{ padding: '18px 24px', textAlign: 'right', fontWeight: 600, color: colors.navy, fontSize: '13px' }}>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersList.filter(u => 
+                      (u.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                      (u.email || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                      (u.ua_id || '').toLowerCase().includes(userSearchTerm.toLowerCase())
+                    ).length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ padding: '40px 24px', textAlign: 'center', color: colors.textMuted }}>
+                          <Users size={32} style={{ display: 'block', margin: '0 auto 12px', opacity: 0.5 }} />
+                          No registered users found matching the search.
+                        </td>
+                      </tr>
+                    ) : (
+                      usersList.filter(u => 
+                        (u.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        (u.email || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        (u.ua_id || '').toLowerCase().includes(userSearchTerm.toLowerCase())
+                      ).map(user => (
+                        <tr key={user.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                          <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: 600 }}>{user.ua_id}</td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.full_name}</td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.email || 'N/A'}</td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px', textTransform: 'capitalize' }}>
+                            <span style={{ 
+                              padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600,
+                              backgroundColor: user.role === 'admin' ? 'rgba(229, 168, 35, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                              color: user.role === 'admin' ? '#B88114' : '#2563EB'
+                            }}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.academic_level || 'N/A'}</td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px' }}>
+                            <span style={{
+                              padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+                              backgroundColor: user.is_email_verified ? colors.successBg : colors.dangerBg,
+                              color: user.is_email_verified ? colors.success : colors.danger,
+                              border: `1px solid ${user.is_email_verified ? '#A7F3D0' : '#FECACA'}`
+                            }}>
+                              {user.is_email_verified ? 'Verified' : 'Unverified'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.full_name)}
+                              style={{
+                                background: colors.dangerBg, border: `1px solid #FECACA`, color: colors.danger,
+                                cursor: 'pointer', padding: '8px 14px', borderRadius: '8px', fontSize: '13px',
+                                fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                transition: 'all 0.2s', fontFamily: 'inherit'
+                              }}
+                            >
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>

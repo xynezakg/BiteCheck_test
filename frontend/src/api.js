@@ -148,3 +148,32 @@ export const forgotPassword = async (email) => {
     if (!response.ok) throw new Error(data.error || 'Failed to process password reset request.');
     return data;
 };
+
+export const fetchUsers = async () => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/users`, {
+        headers: { 
+            'Authorization': token ? `Bearer ${token}` : '' 
+        }
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch registered users');
+    }
+    return response.json();
+};
+
+export const deleteUser = async (id) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { 
+            'Authorization': token ? `Bearer ${token}` : '' 
+        }
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete user');
+    }
+    return response.json();
+};

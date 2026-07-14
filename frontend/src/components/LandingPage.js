@@ -34,18 +34,50 @@ export default function LandingPage({ navigate }) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
 
-  // Monitor scroll for glass header transition
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+     const [activeSection, setActiveSection] = useState('home');
+
+     // Monitor scroll for glass header transition
+     useEffect(() => {
+       const handleScroll = () => {
+         if (window.scrollY > 20) {
+           setScrolled(true);
+         } else {
+           setScrolled(false);
+         }
+       };
+       window.addEventListener('scroll', handleScroll);
+       return () => window.removeEventListener('scroll', handleScroll);
+     }, []);
+
+     // Monitor intersection of sections to highlight header links
+     useEffect(() => {
+       const sections = ['home', 'about', 'reviews', 'features', 'how-it-works', 'mobile', 'faq'];
+       const observerOptions = {
+         root: null,
+         rootMargin: '-50% 0px -50% 0px',
+         threshold: 0
+       };
+
+       const observer = new IntersectionObserver((entries) => {
+         entries.forEach((entry) => {
+           if (entry.isIntersecting) {
+             setActiveSection(entry.target.id);
+           }
+         });
+       }, observerOptions);
+
+       sections.forEach((id) => {
+         const element = document.getElementById(id);
+         if (element) observer.observe(element);
+       });
+
+       return () => {
+         sections.forEach((id) => {
+           const element = document.getElementById(id);
+           if (element) observer.unobserve(element);
+         });
+       };
+     }, []);
 
   // Fetch feedbacks on mount
   useEffect(() => {
@@ -205,13 +237,23 @@ export default function LandingPage({ navigate }) {
           font-weight: 500;
           font-size: 15px;
           cursor: pointer;
-          transition: color 0.2s ease;
+          transition: all 0.2s ease;
           padding: 8px 4px;
           font-family: inherit;
+          border-bottom: 2px solid transparent;
         }
 
-        .nav-link-item:hover {
+        .nav-link-item:hover,
+        .nav-link-item.active {
           color: var(--navy);
+        }
+
+        .nav-link-item.active {
+          border-bottom-color: var(--gold);
+        }
+
+        .mobile-menu .nav-link-item {
+          align-self: flex-start;
         }
 
         .auth-actions {
@@ -709,13 +751,13 @@ export default function LandingPage({ navigate }) {
 
           {/* Navigation Links */}
           <nav className="nav-links">
-            <button className="nav-link-item" onClick={() => scrollToSection('home')}>Home</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('about')}>About</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('reviews')}>Reviews</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('features')}>Features</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('how-it-works')}>How It Works</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('mobile')}>Mobile App</button>
-            <button className="nav-link-item" onClick={() => scrollToSection('faq')}>FAQ</button>
+            <button className={`nav-link-item ${activeSection === 'home' ? 'active' : ''}`} onClick={() => scrollToSection('home')}>Home</button>
+            <button className={`nav-link-item ${activeSection === 'about' ? 'active' : ''}`} onClick={() => scrollToSection('about')}>About</button>
+            <button className={`nav-link-item ${activeSection === 'reviews' ? 'active' : ''}`} onClick={() => scrollToSection('reviews')}>Reviews</button>
+            <button className={`nav-link-item ${activeSection === 'features' ? 'active' : ''}`} onClick={() => scrollToSection('features')}>Features</button>
+            <button className={`nav-link-item ${activeSection === 'how-it-works' ? 'active' : ''}`} onClick={() => scrollToSection('how-it-works')}>How It Works</button>
+            <button className={`nav-link-item ${activeSection === 'mobile' ? 'active' : ''}`} onClick={() => scrollToSection('mobile')}>Mobile App</button>
+            <button className={`nav-link-item ${activeSection === 'faq' ? 'active' : ''}`} onClick={() => scrollToSection('faq')}>FAQ</button>
           </nav>
 
           {/* Authentication Actions */}
@@ -742,13 +784,13 @@ export default function LandingPage({ navigate }) {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="mobile-menu">
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('home')}>Home</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('about')}>About</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('reviews')}>Reviews</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('features')}>Features</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('how-it-works')}>How It Works</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('mobile')}>Mobile App</button>
-          <button className="nav-link-item" style={{ textAlign: 'left' }} onClick={() => scrollToSection('faq')}>FAQ</button>
+          <button className={`nav-link-item ${activeSection === 'home' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('home')}>Home</button>
+          <button className={`nav-link-item ${activeSection === 'about' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('about')}>About</button>
+          <button className={`nav-link-item ${activeSection === 'reviews' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('reviews')}>Reviews</button>
+          <button className={`nav-link-item ${activeSection === 'features' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('features')}>Features</button>
+          <button className={`nav-link-item ${activeSection === 'how-it-works' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('how-it-works')}>How It Works</button>
+          <button className={`nav-link-item ${activeSection === 'mobile' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('mobile')}>Mobile App</button>
+          <button className={`nav-link-item ${activeSection === 'faq' ? 'active' : ''}`} style={{ textAlign: 'left' }} onClick={() => scrollToSection('faq')}>FAQ</button>
           <hr style={{ border: 'none', borderTop: '1px solid var(--gray-200)' }} />
           <button 
             className="btn btn-primary" 
