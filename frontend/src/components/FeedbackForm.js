@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls, fetchActiveCriteria } from "../api";
-import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed, Camera } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
@@ -36,6 +37,95 @@ export default function FeedbackForm({ navigate }) {
   const [copied, setCopied] = useState(false);
 
   const [user, setUser] = useState(null);
+
+  // Camera Scanner States
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerError, setScannerError] = useState(null);
+  const scannerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(err => console.error("Scanner cleanup error:", err));
+      }
+    };
+  }, []);
+
+  const startScanner = async () => {
+    setScannerError(null);
+    setShowScanner(true);
+    setTimeout(async () => {
+      try {
+        const html5QrCode = new Html5Qrcode("reader");
+        scannerRef.current = html5QrCode;
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          (decodedText) => {
+            handleScanSuccess(decodedText);
+          },
+          () => {}
+        );
+      } catch (err) {
+        console.error("Camera access error:", err);
+        setScannerError("Could not access camera. Ensure camera permissions are allowed.");
+      }
+    }, 300);
+  };
+
+  const stopScanner = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {
+        console.error("Failed to stop scanner:", e);
+      }
+    }
+    setShowScanner(false);
+    setScannerError(null);
+  };
+
+  const handleScanSuccess = async (decodedText) => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setShowScanner(false);
+
+    try {
+      const url = new URL(decodedText);
+      const autoStall = url.searchParams.get("stall");
+      if (autoStall) {
+        const matched = availableStalls.find(s => s.name.toLowerCase() === autoStall.toLowerCase());
+        if (matched) {
+          setSelectedStall(matched.name);
+          setSelectedCanteen(matched.canteen_group || "College");
+          setStep(2);
+        } else {
+          setSelectedStall("General Feedback");
+          setSelectedCanteen("College");
+          setStep(2);
+        }
+      } else {
+        alert("Scan failed: QR code does not contain a canteen stall query parameter.");
+      }
+    } catch (err) {
+      const matched = availableStalls.find(s => s.name.toLowerCase() === decodedText.toLowerCase());
+      if (matched) {
+        setSelectedStall(matched.name);
+        setSelectedCanteen(matched.canteen_group || "College");
+        setStep(2);
+      } else {
+        alert(`Unrecognized QR code: "${decodedText}"`);
+      }
+    }
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('ua_user');
@@ -466,6 +556,43 @@ export default function FeedbackForm({ navigate }) {
                           <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>College Canteen</h3>
                           <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                             Select &rarr;
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Scan QR Card */}
+                      <div
+                        onClick={startScanner}
+                        style={{
+                          width: '280px',
+                          padding: '36px 24px',
+                          backgroundColor: colors.white,
+                          borderRadius: '16px',
+                          border: `1px solid ${colors.border}`,
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.25s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '16px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(229, 168, 35, 0.15)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
+                          <Camera size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Scan QR Code</h3>
+                          <span style={{ fontSize: '13px', color: '#D97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Open Camera &rarr;
                           </span>
                         </div>
                       </div>
@@ -991,6 +1118,81 @@ export default function FeedbackForm({ navigate }) {
           </div>
         </div>
       </div>
+
+      {/* ─── CAMERA SCANNER OVERLAY MODAL ─── */}
+      {showScanner && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.75)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '450px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', textAlign: 'center', position: 'relative',
+            animation: 'fadeUp 0.3s ease'
+          }}>
+            
+            {/* Close Button */}
+            <button
+              onClick={stopScanner}
+              style={{
+                position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none',
+                color: colors.textMuted, cursor: 'pointer', padding: '6px', borderRadius: '50%',
+                transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <X size={20} />
+            </button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6', marginBottom: '16px' }}>
+                <Camera size={26} />
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Scan Stall QR Code</h3>
+              <p style={{ fontSize: '13px', color: colors.textMuted, margin: 0, lineHeight: 1.5 }}>
+                Position the printed QR Code sticker in the center of the scanner frame to select the stall.
+              </p>
+            </div>
+
+            {/* Scanner Frame Box */}
+            <div style={{
+              borderRadius: '16px', overflow: 'hidden', border: `2px dashed ${colors.border}`,
+              backgroundColor: '#0F172A', position: 'relative', width: '100%', aspectRatio: '1/1',
+              boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <div id="reader" style={{ width: '100%', height: '100%' }}></div>
+              
+              {/* Overlay Overlay Scan Lines/Box */}
+              <div style={{
+                position: 'absolute', width: '220px', height: '220px',
+                border: '2px solid #E5A823', borderRadius: '16px',
+                boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.45)', pointerEvents: 'none'
+              }}></div>
+            </div>
+
+            {/* Error Message Box if camera fails */}
+            {scannerError && (
+              <div style={{ marginTop: '20px', padding: '12px 16px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#EF4444', borderRadius: '8px', fontSize: '13px', fontWeight: 500 }}>
+                {scannerError}
+              </div>
+            )}
+
+            <button
+              onClick={stopScanner}
+              style={{
+                marginTop: '24px', width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+                backgroundColor: '#F1F5F9', color: '#1E293B', fontSize: '14px', fontWeight: 600,
+                cursor: 'pointer', transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E2E8F0'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+            >
+              Cancel Scanning
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

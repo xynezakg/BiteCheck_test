@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
+export const API_URL = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
 
 // --- IDENTITY & AUTHENTICATION ---
 
