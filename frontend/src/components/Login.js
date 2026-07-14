@@ -540,7 +540,7 @@ export default function Login({ navigate }) {
         <div style={{ maxWidth: '480px', marginTop: '10px' }} className="desktop-form-heading">
           <h1 className="lp-hero-title" style={{ fontWeight: 700, margin: '0 0 16px 0', lineHeight: 1.1, letterSpacing: '-0.01em' }}>
             Secure Identity<br/>
-            <span>Verification</span>
+            <span style={{ color: colors.gold }}>Verification</span>
           </h1>
           <p className="lp-hero-desc" style={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.6, margin: 0, fontWeight: 400 }}>
             Log in with your official University of the Assumption credentials to securely sign and submit encrypted data.
