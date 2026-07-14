@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls } from "../api";
-import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, BookOpen, UtensilsCrossed } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed } from 'lucide-react';
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
@@ -432,7 +432,7 @@ export default function FeedbackForm({ navigate }) {
                         }}
                       >
                         <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6' }}>
-                          <BookOpen size={24} />
+                          <Utensils size={24} />
                         </div>
                         <div>
                           <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>College Canteen</h3>
