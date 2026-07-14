@@ -177,3 +177,66 @@ export const deleteUser = async (id) => {
     }
     return response.json();
 };
+
+export const fetchActiveCriteria = async () => {
+    const response = await fetch(`${API_URL}/criteria`);
+    if (!response.ok) throw new Error('Failed to fetch criteria');
+    return response.json();
+};
+
+export const fetchAllCriteria = async () => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/criteria`, {
+        headers: { 
+            'Authorization': token ? `Bearer ${token}` : '' 
+        }
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch all criteria');
+    }
+    return response.json();
+};
+
+export const createCriteria = async (name) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/criteria`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '' 
+        },
+        body: JSON.stringify({ name })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to create criterion');
+    return data;
+};
+
+export const updateCriteria = async (id, isActive) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/criteria/${id}`, {
+        method: 'PUT',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '' 
+        },
+        body: JSON.stringify({ is_active: isActive })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to update criterion');
+    return data;
+};
+
+export const deleteCriteria = async (id) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/criteria/${id}`, {
+        method: 'DELETE',
+        headers: { 
+            'Authorization': token ? `Bearer ${token}` : '' 
+        }
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to delete criterion');
+    return data;
+};

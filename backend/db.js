@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 // Render INTERNAL connections do NOT support SSL.
 // Render EXTERNAL connections REQUIRE SSL.
@@ -75,7 +76,45 @@ async function initDB() {
         // Canteen group column for stalls (highschool | college | null = general)
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS canteen_group VARCHAR(20);`);
 
-        console.log("✅ Database initialized: 'users', 'feedbacks', and 'stalls' tables are ready.");
+        // Criteria Table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS criteria (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) UNIQUE NOT NULL,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Seed criteria if empty
+        const critCheck = await pool.query('SELECT COUNT(*) FROM criteria');
+        if (parseInt(critCheck.rows[0].count) === 0) {
+            const defaultCriteria = ['Food', 'Service', 'Staff', 'Cleanliness', 'Value'];
+            for (const name of defaultCriteria) {
+                await pool.query('INSERT INTO criteria (name, is_active) VALUES ($1, TRUE) ON CONFLICT DO NOTHING', [name]);
+            }
+            console.log("🌱 Default canteen criteria seeded.");
+        }
+
+        // Seed or update default admin account and set its email
+        const adminCheck = await pool.query("SELECT * FROM users WHERE role = 'admin'");
+        if (adminCheck.rows.length === 0) {
+            const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+            await pool.query(`
+                INSERT INTO users (ua_id, full_name, role, password_hash, is_email_verified, email)
+                VALUES ('admin', 'System Administrator', 'admin', $1, TRUE, 'admin@ua.edu.ph')
+            `, [hashedAdminPassword]);
+            console.log("🌱 Seeded default admin account (username: admin / password: admin123).");
+        } else {
+            // Update email for existing admin if it is null
+            await pool.query(`
+                UPDATE users 
+                SET email = COALESCE(email, 'admin@ua.edu.ph') 
+                WHERE role = 'admin' AND email IS NULL
+            `);
+        }
+
+        console.log("✅ Database initialized: 'users', 'feedbacks', 'stalls', and 'criteria' tables are ready.");
 
     } catch (err) {
         console.error("❌ Failed to create table:", err.message);

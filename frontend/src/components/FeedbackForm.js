@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { submitFeedback, fetchStalls } from "../api";
+import { submitFeedback, fetchStalls, fetchActiveCriteria } from "../api";
 import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed } from 'lucide-react';
 
 // Client-Side Cryptography
@@ -22,7 +22,8 @@ export default function FeedbackForm({ navigate }) {
   // Draft banner notification
   const [draftBanner, setDraftBanner] = useState(false);
 
-  const [ratings, setRatings] = useState({ Food: 5, Service: 5, Staff: 5, Cleanliness: 5, Value: 5 });
+  const [ratings, setRatings] = useState({});
+  const [criteriaList, setCriteriaList] = useState([]);
   const [hoverRating, setHoverRating] = useState({ category: '', val: 0 });
 
   const [imagePreview, setImagePreview] = useState(null);
@@ -106,7 +107,27 @@ export default function FeedbackForm({ navigate }) {
       }
     };
 
-    loadStalls().then(checkDraft);
+    const loadCriteria = async () => {
+      try {
+        const data = await fetchActiveCriteria();
+        if (data && Array.isArray(data)) {
+          setCriteriaList(data);
+          setRatings(prev => {
+            const newRatings = { ...prev };
+            data.forEach(c => {
+              if (newRatings[c] === undefined) {
+                newRatings[c] = 5;
+              }
+            });
+            return newRatings;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch criteria:", err);
+      }
+    };
+
+    loadCriteria().then(loadStalls).then(checkDraft);
   }, [navigate]);
 
 
@@ -152,7 +173,7 @@ export default function FeedbackForm({ navigate }) {
   const handleRatingChange = (category, value) => setRatings(prev => ({ ...prev, [category]: value }));
 
   const totalScore = Object.values(ratings).reduce((sum, val) => sum + val, 0);
-  const overallRating = Math.round(totalScore / 5);
+  const overallRating = criteriaList.length > 0 ? Math.round(totalScore / criteriaList.length) : 5;
 
   // Prevents white screen on logout
   const handleLogout = () => {
@@ -191,7 +212,8 @@ export default function FeedbackForm({ navigate }) {
     setStatus("signing");
     setSignMessage("Initializing Ed25519 Curve...");
 
-    const payloadText = `[Stall: ${selectedStall}] [Scores -> Food: ${ratings.Food}/5 | Service: ${ratings.Service}/5 | Staff: ${ratings.Staff}/5 | Clean: ${ratings.Cleanliness}/5 | Value: ${ratings.Value}/5]\n\n${form.comment}`;
+    const scoresStr = criteriaList.map(c => `${c}: ${ratings[c] || 5}/5`).join(' | ');
+    const payloadText = `[Stall: ${selectedStall}] [Scores -> ${scoresStr}]\n\n${form.comment}`;
 
     const displayName = isAnonymous ? "Anonymous Student" : user.full_name;
 
@@ -649,7 +671,13 @@ export default function FeedbackForm({ navigate }) {
                   <div style={{ backgroundColor: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}`, padding: '24px' }}>
                     <label style={{ fontSize: '12px', color: colors.navy, fontWeight: 700, display: 'block', marginBottom: '16px', letterSpacing: '0.05em' }}>CATEGORY SCORING</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {Object.keys(ratings).map((category) => (
+                      {criteriaList.length === 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', color: colors.textMuted }}>
+                          <Loader2 className="animate-spin" size={20} style={{ marginRight: '8px' }} />
+                          Loading evaluation categories...
+                        </div>
+                      ) : (
+                        criteriaList.map((category) => (
                         <div key={category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', backgroundColor: colors.bg, borderRadius: '8px', border: `1px solid transparent` }}>
                           <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                             <span style={{ fontWeight: 600, fontSize: '14px', color: colors.text }}>{category}</span>
@@ -675,7 +703,8 @@ export default function FeedbackForm({ navigate }) {
                             })}
                           </div>
                         </div>
-                      ))}
+                      ))
+                    )}
                     </div>
                   </div>
 

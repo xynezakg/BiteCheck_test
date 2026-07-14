@@ -400,6 +400,120 @@ router.delete('/admin/users/:id', requireAuth, async (req, res) => {
     }
 });
 
+// --- DYNAMIC EVALUATION CRITERIA ROUTES ---
+
+// GET `/criteria` -> returns active criteria names for student form
+router.get('/criteria', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT name FROM criteria WHERE is_active = TRUE ORDER BY id ASC');
+        res.json(result.rows.map(row => row.name));
+    } catch (err) {
+        console.error("Error fetching active criteria:", err);
+        res.status(500).json({ error: 'Server error fetching criteria' });
+    }
+});
+
+// GET `/admin/criteria` -> returns all criteria (active & inactive) for admin management
+router.get('/admin/criteria', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    try {
+        const result = await pool.query('SELECT * FROM criteria ORDER BY id ASC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching all criteria:", err);
+        res.status(500).json({ error: 'Server error fetching criteria' });
+    }
+});
+
+// POST `/admin/criteria` -> add a new criterion
+router.post('/admin/criteria', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Criteria name is required.' });
+    
+    const cleanName = name.trim();
+    if (/[\[\]:|/]/g.test(cleanName)) {
+        return res.status(400).json({ error: 'Criteria name contains invalid characters: [ ] : | /' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO criteria (name, is_active) VALUES ($1, TRUE) RETURNING *',
+            [cleanName]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') {
+            return res.status(400).json({ error: 'A criterion with this name already exists.' });
+        }
+        console.error("Error creating criterion:", err);
+        res.status(500).json({ error: 'Server error creating criterion.' });
+    }
+});
+
+// PUT `/admin/criteria/:id` -> toggle status (active/inactive)
+router.put('/admin/criteria/:id', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    try {
+        if (is_active === false) {
+            const activeCountResult = await pool.query('SELECT COUNT(*) FROM criteria WHERE is_active = TRUE AND id != $1', [id]);
+            if (parseInt(activeCountResult.rows[0].count) === 0) {
+                return res.status(400).json({ error: 'Cannot deactivate all criteria. At least one must remain active.' });
+            }
+        }
+
+        const result = await pool.query(
+            'UPDATE criteria SET is_active = $1 WHERE id = $2 RETURNING *',
+            [is_active, id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Criterion not found.' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error updating criterion:", err);
+        res.status(500).json({ error: 'Server error updating criterion.' });
+    }
+});
+
+// DELETE `/admin/criteria/:id` -> delete a criterion
+router.delete('/admin/criteria/:id', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { id } = req.params;
+
+    try {
+        const checkActive = await pool.query('SELECT is_active FROM criteria WHERE id = $1', [id]);
+        if (checkActive.rows.length === 0) {
+            return res.status(404).json({ error: 'Criterion not found.' });
+        }
+
+        if (checkActive.rows[0].is_active) {
+            const activeCountResult = await pool.query('SELECT COUNT(*) FROM criteria WHERE is_active = TRUE AND id != $1', [id]);
+            if (parseInt(activeCountResult.rows[0].count) === 0) {
+                return res.status(400).json({ error: 'Cannot delete the only active criterion. At least one must remain active.' });
+            }
+        }
+
+        await pool.query('DELETE FROM criteria WHERE id = $1', [id]);
+        res.json({ message: 'Criterion deleted successfully.' });
+    } catch (err) {
+        console.error("Error deleting criterion:", err);
+        res.status(500).json({ error: 'Server error deleting criterion.' });
+    }
+});
+
 // --- SECURE FEEDBACK ROUTE ---
 router.post('/feedback', requireAuth, async (req, res) => {
     let { rating, comment, attachment, signature, public_key, is_anonymous } = req.body;
