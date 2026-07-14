@@ -5,11 +5,32 @@ import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import VerifyReceipt from "./components/VerifyReceipt"; 
 import Login from "./components/Login";
+import Onboarding from "./components/Onboarding";
+import { Capacitor } from '@capacitor/core';
 
 export default function App() {
   // Determine initial view based on URL pathname
   const getInitialView = () => {
     const path = window.location.pathname;
+    const onboarded = localStorage.getItem('ua_onboarded');
+    const isMobileApp = Capacitor.isNativePlatform();
+    
+    // 1. Force onboarding on mobile devices on first app launch
+    if (isMobileApp && !onboarded) {
+      return "onboarding";
+    }
+
+    // 2. Bypass landing page entirely on mobile app subsequent launches
+    if (isMobileApp) {
+      const token = localStorage.getItem('ua_token');
+      const userStr = localStorage.getItem('ua_user');
+      if (token && userStr) {
+        return "feedback";
+      } else {
+        return "login";
+      }
+    }
+
     if (path === "/admin") return "admin-login";
     if (path === "/verify-receipt" || path === "/verify_receipt") return "verify_receipt";
     if (path === "/login" || path === "/student-login") return "login";
@@ -48,6 +69,7 @@ export default function App() {
 
   return (
     <>
+      {currentView === "onboarding" && <Onboarding onComplete={() => navigate("landing")} />}
       {currentView === "landing" && <LandingPage navigate={navigate} />}
       
       {/* 🧑‍🎓 STUDENT LOGIN PORTAL */}
