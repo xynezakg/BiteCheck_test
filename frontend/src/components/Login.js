@@ -652,14 +652,14 @@ export default function Login({ navigate }) {
             </div>
             <h2>
               {isLogin ? (
-                <>Welcome <span>Back</span></>
+                <>Get <span>Started</span></>
               ) : (
                 <>Create Your <span>Account</span></>
               )}
             </h2>
             <p>
               {isLogin
-                ? 'Sign in with your official University credentials.'
+                ? 'Log in with your official University credentials.'
                 : 'Register a new identity with your official UA credentials.'}
             </p>
           </div>
@@ -668,14 +668,14 @@ export default function Login({ navigate }) {
           <div className="desktop-form-heading" style={{ marginBottom: '24px' }}>
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: colors.navy, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
               {isLogin ? (
-                <>Welcome <span style={{ color: colors.gold }}>Back</span></>
+                <>Get <span style={{ color: colors.gold }}>Started</span></>
               ) : (
                 <>Create Your <span style={{ color: colors.gold }}>Identity</span></>
               )}
             </h2>
             <p style={{ fontSize: '14px', color: colors.textMuted, margin: 0, lineHeight: 1.5 }}>
               {isLogin
-                ? 'Sign in with your official University credentials.'
+                ? 'Log in with your official University credentials.'
                 : 'Register a new identity with your official UA credentials.'}
             </p>
           </div>
@@ -846,7 +846,7 @@ export default function Login({ navigate }) {
               onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+              {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Create Account')}
               {!loading && <ArrowRight size={18} />}
             </button>
           </form>
@@ -858,7 +858,35 @@ export default function Login({ navigate }) {
                 <span style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>OR</span>
                 <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
               </div>
-              <div id="googleSignInBtn" style={{ width: '100%', minHeight: '44px', display: 'flex', justifyContent: 'center' }} />
+              <div style={{ position: 'relative', width: '100%', minHeight: '44px', display: 'flex', justifyContent: 'center' }}>
+                {/* Custom Overlay Button */}
+                <button type="button" style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '10px',
+                  border: `1.5px solid ${colors.border}`,
+                  backgroundColor: colors.white,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  fontFamily: 'inherit',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  color: colors.text,
+                  pointerEvents: 'none', // Allow clicks to pass through to the google button below
+                  boxSizing: 'border-box'
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.67 0 3.19.57 4.38 1.69l3.27-3.27C17.67 1.54 14.99 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.86 3C6.27 7.55 8.91 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.75-4.87 3.75-8.49z"/><path fill="#FBBC05" d="M5.36 14.5c-.24-.71-.38-1.47-.38-2.5s.14-1.79.38-2.5L1.5 6.5C.54 8.42 0 10.15 0 12s.54 3.58 1.5 5.5l3.86-3z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.66-2.84c-1.01.68-2.31 1.09-3.9 1.09-3.09 0-5.73-2.51-6.64-5.46l-3.86 3C3.4 20.35 7.35 23 12 23z"/></svg>
+                  Log in with Google
+                </button>
+                <div id="googleSignInBtn" style={{
+                  position: 'absolute', inset: 0,
+                  opacity: 0.01,
+                  zIndex: 10,
+                  display: 'flex',
+                  justifyContent: 'center'
+                }} />
+              </div>
             </>
           )}
 
@@ -870,7 +898,7 @@ export default function Login({ navigate }) {
             <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); }}
               style={{ background: 'none', border: 'none', padding: 0, color: colors.gold, fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', textDecoration: 'underline' }}
             >
-              {isLogin ? 'Create an Account' : 'Sign In'}
+              {isLogin ? 'Create an Account' : 'Log In'}
             </button>
           </div>
 

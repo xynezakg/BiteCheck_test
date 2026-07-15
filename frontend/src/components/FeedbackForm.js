@@ -372,7 +372,7 @@ export default function FeedbackForm({ navigate }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
         
-        .top-nav { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin-bottom: 40px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin-bottom: 40px; }
         .hero-title { font-size: 38px; }
         .hero-desc { font-size: 16px; }
         .card-inner { padding: 40px; }
@@ -440,13 +440,13 @@ export default function FeedbackForm({ navigate }) {
         </div>
 
         {draftBanner && (
-          <div style={{ animation: 'fadeUp 0.3s ease', backgroundColor: '#ECFDF5', border: `1px solid rgba(16, 185, 129, 0.4)`, color: '#065F46', padding: '14px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', width: '100%', maxWidth: '900px', boxSizing: 'border-box' }}>
+          <div style={{ animation: 'fadeUp 0.3s ease', backgroundColor: '#ECFDF5', border: `1px solid rgba(16, 185, 129, 0.4)`, color: '#065F46', padding: '14px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', width: '100%', maxWidth: '1200px', boxSizing: 'border-box' }}>
             <CheckCircle2 size={18} color="#10B981" />
             <span style={{ fontSize: '14px', fontWeight: 600 }}>Draft restored! We loaded your previous feedback evaluation.</span>
           </div>
         )}
 
-        <div style={{ width: '100%', maxWidth: '900px', backgroundColor: colors.white, borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
+        <div style={{ width: '100%', maxWidth: '1200px', backgroundColor: colors.white, borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
 
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', padding: '24px 0', borderBottom: `1px solid ${colors.border}`, backgroundColor: '#FAFAFA' }}>
             {[1, 2, 3, 4].map((num, idx) => (
@@ -480,7 +480,7 @@ export default function FeedbackForm({ navigate }) {
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center', width: '100%' }}>
                       
-                      {/* High School Canteen */}
+                      {/* High School Stall */}
                       <div
                         onClick={() => {
                           setSelectedCanteen("SHS");
@@ -513,14 +513,14 @@ export default function FeedbackForm({ navigate }) {
                           <UtensilsCrossed size={24} />
                         </div>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>High School Canteen</h3>
+                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Highschool Canteen</h3>
                           <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                             Select &rarr;
                           </span>
                         </div>
                       </div>
 
-                      {/* College Canteen */}
+                      {/* College Stall */}
                       <div
                         onClick={() => {
                           setSelectedCanteen("College");
@@ -613,7 +613,7 @@ export default function FeedbackForm({ navigate }) {
                         &larr; Change Canteen
                       </button>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: colors.navy, backgroundColor: selectedCanteen === 'College' ? '#EFF6FF' : '#FEF2F2', padding: '4px 10px', borderRadius: '12px' }}>
-                        {selectedCanteen === 'College' ? 'College Canteen' : 'High School Canteen'}
+                        {selectedCanteen === 'College' ? 'College Canteen' : 'Highschool Canteen'}
                       </span>
                     </div>
 
@@ -710,7 +710,7 @@ export default function FeedbackForm({ navigate }) {
                                       borderRadius: '4px',
                                       border: `1px solid ${stall.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
                                     }}>
-                                      {stall.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
+                                      {stall.canteen_group === 'College' ? 'College Canteen' : 'Highschool Canteen'}
                                     </span>
                                   )}
                                 </div>
@@ -787,7 +787,7 @@ export default function FeedbackForm({ navigate }) {
                           borderRadius: '4px',
                           border: `1px solid ${selectedStallObj.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
                         }}>
-                          {selectedStallObj.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
+                          {selectedStallObj.canteen_group === 'College' ? 'College Stall' : 'High School Stall'}
                         </span>
                       )}
                     </p>
