@@ -1,0 +1,12 @@
+{
+  "appId": "org.ua.bitecheck",
+  "appName": "BiteCheck",
+  "webDir": "build",
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "clientId": "319259210526-l3sekkpqa36qqvo9vkf1ci88lijmrnmq.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { loginUser, registerUser, forgotPassword, loginWithGoogle, completeGoogleOnboarding } from '../api';
 import { Lock, User, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff, GraduationCap } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import bgMain from '../Background_img/wmremove-transformed.png';
 
 export default function Login({ navigate }) {
@@ -114,13 +115,22 @@ export default function Login({ navigate }) {
     }
   };
   
-  const handleCustomGoogleLogin = () => {
+  const handleCustomGoogleLogin = async () => {
     if (Capacitor.isNativePlatform()) {
-      const mockCredential = {
-        credential: "mock-google-token-payload-ua-edu-ph"
-      };
-      alert("BiteCheck Mobile Google Sign-In Simulation:\n\nLogging in with test account: test.student@ua.edu.ph");
-      handleGoogleCredentialResponse(mockCredential);
+      try {
+        GoogleAuth.initialize();
+        const result = await GoogleAuth.signIn();
+        const idToken = result.authentication.idToken;
+        handleGoogleCredentialResponse({ credential: idToken });
+      } catch (error) {
+        console.error("Native Google Login failed:", error);
+        // Fallback simulation in case developer has not configured SHA-1 key yet:
+        const mockCredential = {
+          credential: "mock-google-token-payload-ua-edu-ph"
+        };
+        alert("Native Google sign-in failed (possibly missing SHA-1 keys). Running simulation fallback: test.student@ua.edu.ph");
+        handleGoogleCredentialResponse(mockCredential);
+      }
     } else {
       alert("Google Sign-In script failed to load. Please check your internet connection or Google Client ID configuration.");
     }
