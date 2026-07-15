@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { loginUser, registerUser, forgotPassword, loginWithGoogle, completeGoogleOnboarding } from '../api';
 import { Lock, User, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff, GraduationCap } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import bgMain from '../Background_img/wmremove-transformed.png';
 
 export default function Login({ navigate }) {
@@ -851,7 +852,7 @@ export default function Login({ navigate }) {
             </button>
           </form>
 
-          {isLogin && (
+          {isLogin && !Capacitor.isNativePlatform() && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '10px' }}>
                 <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
