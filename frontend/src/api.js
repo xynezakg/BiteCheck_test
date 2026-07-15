@@ -1,4 +1,8 @@
-export const API_URL = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
+let rawApiUrl = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
+if (rawApiUrl.endsWith('/')) {
+    rawApiUrl = rawApiUrl.slice(0, -1);
+}
+export const API_URL = rawApiUrl;
 
 // --- IDENTITY & AUTHENTICATION ---
 
