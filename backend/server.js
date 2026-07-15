@@ -13,9 +13,7 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
         
-        const isAllowed = origin === 'http://localhost:3000' || 
-                          origin === 'http://localhost' || 
-                          origin.startsWith('http://localhost:') || 
+        const isAllowed = origin.includes('localhost') || 
                           origin.startsWith('capacitor://') ||
                           origin.endsWith('.vercel.app') || 
                           origin.includes('vercel.app');
