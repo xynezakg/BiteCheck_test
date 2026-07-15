@@ -272,6 +272,18 @@ export default function FeedbackForm({ navigate }) {
     window.location.href = '/';
   };
 
+  const handleReturnHome = () => {
+    setStep(1);
+    setStatus("idle");
+    setSelectedStall("");
+    setSelectedCanteen(null);
+    setRatings({});
+    setForm({ comment: "" });
+    setImagePreview(null);
+    setReceiptData(null);
+    setCopied(false);
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1102,15 +1114,27 @@ export default function FeedbackForm({ navigate }) {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  style={{ width: '100%', maxWidth: '440px', padding: '16px', fontSize: '15px', fontWeight: 600, backgroundColor: colors.navy, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.2s', fontFamily: 'inherit' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#17365C'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.navy}
-                >
-                  Logout & Return Home
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '440px', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={handleReturnHome}
+                    style={{ width: '100%', padding: '16px', fontSize: '15px', fontWeight: 600, backgroundColor: colors.navy, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.2s', fontFamily: 'inherit' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#17365C'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.navy}
+                  >
+                    Evaluate Another Stall
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    style={{ width: '100%', padding: '14px', fontSize: '14px', fontWeight: 600, backgroundColor: 'transparent', color: colors.textMuted, border: `1.5px solid ${colors.border}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = colors.red; e.currentTarget.style.borderColor = '#FCA5A5'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.textMuted; e.currentTarget.style.borderColor = colors.border; }}
+                  >
+                    Log Out
+                  </button>
+                </div>
 
               </div>
             )}
