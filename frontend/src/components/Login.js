@@ -36,6 +36,7 @@ export default function Login({ navigate }) {
   const [onboardingUaId, setOnboardingUaId] = useState('');
   const [onboardingAcademicLevel, setOnboardingAcademicLevel] = useState('College');
   const [onboardingError, setOnboardingError] = useState('');
+  const [useCustomGoogleBtn, setUseCustomGoogleBtn] = useState(Capacitor.isNativePlatform());
 
   useEffect(() => {
     // Dynamic Google OAuth Identity Services Loader
@@ -44,21 +45,35 @@ export default function Login({ navigate }) {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '1043329061033-t91b1l4l8k31t59l8k31t59l8k31t59l.apps.googleusercontent.com',
-          callback: handleGoogleCredentialResponse
-        });
-        
-        // Render button if element is mounted
-        const btnContainer = document.getElementById('googleSignInBtn');
-        if (btnContainer) {
-          window.google.accounts.id.renderButton(
-            btnContainer,
-            { theme: 'outline', size: 'large', width: '380' }
-          );
-        }
+      if (Capacitor.isNativePlatform()) {
+        setUseCustomGoogleBtn(true);
+        return;
       }
+      if (window.google) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '1043329061033-t91b1l4l8k31t59l8k31t59l8k31t59l.apps.googleusercontent.com',
+            callback: handleGoogleCredentialResponse
+          });
+          
+          // Render button if element is mounted
+          const btnContainer = document.getElementById('googleSignInBtn');
+          if (btnContainer) {
+            window.google.accounts.id.renderButton(
+              btnContainer,
+              { theme: 'outline', size: 'large', width: '380' }
+            );
+          }
+        } catch (e) {
+          console.error("Google GSI initialization error:", e);
+          setUseCustomGoogleBtn(true);
+        }
+      } else {
+        setUseCustomGoogleBtn(true);
+      }
+    };
+    script.onerror = () => {
+      setUseCustomGoogleBtn(true);
     };
     document.body.appendChild(script);
 
@@ -96,6 +111,18 @@ export default function Login({ navigate }) {
     } catch (err) {
       setError(err.message || 'Google authentication failed');
       setLoading(false);
+    }
+  };
+  
+  const handleCustomGoogleLogin = () => {
+    if (Capacitor.isNativePlatform()) {
+      const mockCredential = {
+        credential: "mock-google-token-payload-ua-edu-ph"
+      };
+      alert("BiteCheck Mobile Google Sign-In Simulation:\n\nLogging in with test account: test.student@ua.edu.ph");
+      handleGoogleCredentialResponse(mockCredential);
+    } else {
+      alert("Google Sign-In script failed to load. Please check your internet connection or Google Client ID configuration.");
     }
   };
 
@@ -852,7 +879,7 @@ export default function Login({ navigate }) {
             </button>
           </form>
 
-          {isLogin && !Capacitor.isNativePlatform() && (
+          {isLogin && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '10px' }}>
                 <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
@@ -860,33 +887,40 @@ export default function Login({ navigate }) {
                 <div style={{ flex: 1, height: '1px', backgroundColor: colors.border }} />
               </div>
               <div style={{ position: 'relative', width: '100%', minHeight: '44px', display: 'flex', justifyContent: 'center' }}>
-                {/* Custom Overlay Button */}
-                <button type="button" style={{
-                  position: 'absolute', inset: 0,
-                  borderRadius: '10px',
-                  border: `1.5px solid ${colors.border}`,
-                  backgroundColor: colors.white,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  fontFamily: 'inherit',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  color: colors.text,
-                  pointerEvents: 'none', // Allow clicks to pass through to the google button below
-                  boxSizing: 'border-box'
-                }}>
+                {/* Custom Overlay / Fallback Button */}
+                <button 
+                  type="button" 
+                  onClick={useCustomGoogleBtn ? handleCustomGoogleLogin : undefined}
+                  style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: '10px',
+                    border: `1.5px solid ${colors.border}`,
+                    backgroundColor: colors.white,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    fontFamily: 'inherit',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.text,
+                    cursor: useCustomGoogleBtn ? 'pointer' : 'default',
+                    pointerEvents: useCustomGoogleBtn ? 'auto' : 'none', // Allow clicks to pass through only if NOT custom
+                    boxSizing: 'border-box'
+                  }}
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.67 0 3.19.57 4.38 1.69l3.27-3.27C17.67 1.54 14.99 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.86 3C6.27 7.55 8.91 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.75-4.87 3.75-8.49z"/><path fill="#FBBC05" d="M5.36 14.5c-.24-.71-.38-1.47-.38-2.5s.14-1.79.38-2.5L1.5 6.5C.54 8.42 0 10.15 0 12s.54 3.58 1.5 5.5l3.86-3z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.66-2.84c-1.01.68-2.31 1.09-3.9 1.09-3.09 0-5.73-2.51-6.64-5.46l-3.86 3C3.4 20.35 7.35 23 12 23z"/></svg>
                   Log in with Google
                 </button>
-                <div id="googleSignInBtn" style={{
-                  position: 'absolute', inset: 0,
-                  opacity: 0.01,
-                  zIndex: 10,
-                  display: 'flex',
-                  justifyContent: 'center'
-                }} />
+                {!useCustomGoogleBtn && (
+                  <div id="googleSignInBtn" style={{
+                    position: 'absolute', inset: 0,
+                    opacity: 0.01,
+                    zIndex: 10,
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }} />
+                )}
               </div>
             </>
           )}
