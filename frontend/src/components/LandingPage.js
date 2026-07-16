@@ -967,7 +967,6 @@ export default function LandingPage({ navigate }) {
 
             {/* Left Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">            
-              </div>
 
               <h1 style={{ color: 'var(--white)', fontSize: 'clamp(36px, 5vw, 52px)', lineHeight: 1.1, margin: 0, fontWeight: 800, letterSpacing: '-0.03em' }}>
                 Share Your Dining Experience at the <span style={{ color: 'var(--gold)' }}>UA Canteen</span>
