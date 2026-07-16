@@ -73,7 +73,7 @@ function generateStoreReport(reportData, res = null) {
             doc.rect(50, startY, 512, boxHeight).fillAndStroke(colors.lightBg, colors.lightBg);
             
             // Absolute position the inner text relative to startY
-            doc.fillColor(colors.text).font('Helvetica-Bold').fontSize(11).text(`Customer: Anonymous`, 60, startY + 12);
+            doc.fillColor(colors.text).font('Helvetica-Bold').fontSize(11).text(`Customer: ${f.customer_name || 'Anonymous Student'}`, 60, startY + 12);
             
             const starColor = f.rating >= 4 ? colors.success : (f.rating >= 3 ? colors.secondary : colors.danger);
             doc.fillColor(starColor).text(`${f.rating}/5 Stars`, 480, startY + 12);

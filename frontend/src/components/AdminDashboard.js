@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAllFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria } from "../api";
+import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
@@ -191,7 +191,7 @@ export default function AdminDashboard({ navigate }) {
     const fetchAndAudit = async () => {
       if (isAuditingRef.current) return;
       try {
-        const data = await getAllFeedbacks();
+        const data = await getAdminFeedbacks();
         setFeedbacks(data);
 
         const results = data.map(f => ({

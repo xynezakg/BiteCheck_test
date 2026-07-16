@@ -111,6 +111,14 @@ export const getAllFeedbacks = async () => {
     return response.json();
 };
 
+export const getAdminFeedbacks = async () => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/feedbacks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.json();
+};
+
 export const getFeedbackPhoto = async (id) => {
     const response = await fetch(`${API_URL}/feedback/${id}/photo`);
     if (!response.ok) return null;

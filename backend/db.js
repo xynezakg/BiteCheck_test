@@ -51,6 +51,7 @@ async function initDB() {
         await pool.query(`ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS attachment TEXT;`);
         await pool.query(`ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS is_quarantined BOOLEAN DEFAULT FALSE;`);
         await pool.query(`ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;`);
+        await pool.query(`ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT FALSE;`);
 
          await pool.query(`
             CREATE TABLE IF NOT EXISTS stalls (
@@ -124,12 +125,12 @@ async function initDB() {
 
 initDB();
 
-const addFeedback = async ({ user_id, customer_name, rating, comment, signature, public_key, attachment }) => {
+const addFeedback = async ({ user_id, customer_name, rating, comment, signature, public_key, attachment, is_anonymous = false }) => {
     const query = `
-        INSERT INTO feedbacks (user_id, customer_name, rating, comment, signature, public_key, attachment)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at
+        INSERT INTO feedbacks (user_id, customer_name, rating, comment, signature, public_key, attachment, is_anonymous)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, created_at
     `;
-    const values = [user_id, customer_name, rating, comment, signature, public_key, attachment];
+    const values = [user_id, customer_name, rating, comment, signature, public_key, attachment, is_anonymous];
     const res = await pool.query(query, values);
     return res.rows[0];
 };

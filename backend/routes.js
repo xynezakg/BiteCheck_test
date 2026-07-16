@@ -16,6 +16,7 @@ const { verifySignature } = require('./eddsa');
 const { registerUser, loginUser, requireAuth, googleLogin, googleOnboarding } = require('./auth');
 const { generateStoreReport, analyzeFeedbackData } = require('./reportGenerator');
 const { sendEmail } = require('./email');
+const { sanitizeComment } = require('./utils/profanityFilter');
 const bcrypt = require('bcrypt');
 
 // --- CLOUDINARY CONFIGURATION ---
@@ -521,14 +522,12 @@ router.delete('/admin/criteria/:id', requireAuth, async (req, res) => {
 router.post('/feedback', requireAuth, async (req, res) => {
     let { rating, comment, attachment, signature, public_key, is_anonymous } = req.body;
 
-    let customer_name = req.user.full_name;
-    if (is_anonymous) {
-        customer_name = "Anonymous Student";
-    }
+    const customer_name = req.user.full_name;
     const user_id = req.user.id;
 
     rating = Number(rating);
     comment = comment ? String(comment).trim() : "";
+    comment = sanitizeComment(comment);
 
     if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });
     if (!comment) return res.status(400).json({ error: 'Comment required' });
@@ -558,7 +557,7 @@ router.post('/feedback', requireAuth, async (req, res) => {
     }
 
     try {
-        const inserted = await addFeedback({ user_id, customer_name, rating, comment, signature, public_key, attachment });
+        const inserted = await addFeedback({ user_id, customer_name, rating, comment, signature, public_key, attachment, is_anonymous });
         res.status(201).json(inserted);
     } catch (e) {
         console.error("Insert Error:", e.message);
@@ -587,12 +586,52 @@ router.get('/feedbacks', async (req, res) => {
             const has_attachment = !!row.attachment;
             delete row.attachment;
 
-            return { ...row, _is_signature_valid: valid, has_attachment };
+            // Make it anonymous for the public view
+            const finalRow = { ...row, _is_signature_valid: valid, has_attachment };
+            if (row.is_anonymous) {
+                finalRow.customer_name = "Anonymous Student";
+            }
+
+            return finalRow;
         });
 
         res.json(verifiedRows);
     } catch (e) {
         res.status(500).json({ error: "Couldn't fetch feedback." });
+    }
+});
+
+router.get('/admin/feedbacks', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied: Admin role required.' });
+    }
+    try {
+        const rows = await getAllFeedback();
+
+        const verifiedRows = rows.map(row => {
+            const feedbackForVerify = {
+                customer_name: row.customer_name,
+                rating: row.rating,
+                comment: row.comment
+            };
+            let valid = false;
+            try {
+                const pubKeyBin = Buffer.from(row.public_key, 'base64');
+                valid = verifySignature(pubKeyBin, feedbackForVerify, row.signature);
+            } catch (e) {
+                valid = false;
+            }
+
+            const has_attachment = !!row.attachment;
+            delete row.attachment;
+
+            // Admin gets real name even if is_anonymous is true!
+            return { ...row, _is_signature_valid: valid, has_attachment };
+        });
+
+        res.json(verifiedRows);
+    } catch (e) {
+        res.status(500).json({ error: "Couldn't fetch admin feedback." });
     }
 });
 

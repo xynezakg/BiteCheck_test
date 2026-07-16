@@ -5,6 +5,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
+import { sanitizeComment } from '../utils/profanityFilter';
 import { generateKeyPair, signData } from '../utils/crypto';
 
 // Background image
@@ -314,8 +315,9 @@ export default function FeedbackForm({ navigate }) {
     setStatus("signing");
     setSignMessage("Initializing Ed25519 Curve...");
 
+    const sanitizedUserComment = sanitizeComment(form.comment);
     const scoresStr = criteriaList.map(c => `${c}: ${ratings[c] || 5}/5`).join(' | ');
-    const payloadText = `[Stall: ${selectedStall}] [Scores -> ${scoresStr}]\n\n${form.comment}`;
+    const payloadText = `[Stall: ${selectedStall}] [Scores -> ${scoresStr}]\n\n${sanitizedUserComment}`;
 
     const displayName = isAnonymous ? "Anonymous Student" : user.full_name;
 
@@ -412,6 +414,79 @@ export default function FeedbackForm({ navigate }) {
           .card-inner { padding: 20px 16px; }
           .stall-grid { grid-template-columns: 1fr 1fr; }
         }
+
+        /* --- PREMIUM CANTEEN SELECTOR DASHBOARD --- */
+        .canteen-card {
+          width: 290px;
+          padding: 24px 20px;
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          box-shadow: 0 4px 12px rgba(12, 35, 64, 0.03);
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          user-select: none;
+          box-sizing: border-box;
+        }
+        .canteen-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(12, 35, 64, 0.08);
+          border-color: #cbd5e1;
+        }
+        .canteen-card:active {
+          transform: scale(0.97);
+        }
+        .canteen-card-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+        .canteen-card:hover .canteen-card-icon {
+          transform: scale(1.05) rotate(5deg);
+        }
+        .quick-action-btn {
+          width: 100%;
+          max-width: 604px;
+          padding: 16px 20px;
+          background-color: #ffffff;
+          border: 1.5px dashed #e5a823;
+          border-radius: 14px;
+          box-shadow: 0 2px 8px rgba(229, 168, 35, 0.04);
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s ease-in-out;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          user-select: none;
+          box-sizing: border-box;
+          margin-top: 12px;
+        }
+        .quick-action-btn:hover {
+          background-color: #fffbeb;
+          box-shadow: 0 6px 16px rgba(229, 168, 35, 0.1);
+          transform: translateY(-2px);
+          border-color: #d97706;
+        }
+        .quick-action-btn:active {
+          transform: scale(0.98);
+        }
+        
+        @media (max-width: 640px) {
+          .canteen-card {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
       `}</style>
 
       <div style={{
@@ -474,11 +549,11 @@ export default function FeedbackForm({ navigate }) {
             {/* --- STEP 1: SELECT CANTEEN & STALL --- */}
             {step === 1 && status !== "signing" && (
               <div style={{ animation: 'fadeUp 0.4s ease' }}>
-                <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-                  <h2 style={{ fontSize: '26px', fontWeight: 800, color: colors.navy, margin: '0 0 10px 0', letterSpacing: '-0.02em' }}>Where did you eat?</h2>
-                  <p style={{ color: colors.textMuted, fontSize: '16px', margin: 0 }}>
+                <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: colors.navy, margin: '0 0 6px 0', letterSpacing: '-0.03em' }}>Choose a Canteen</h2>
+                  <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0, fontWeight: 400 }}>
                     {selectedCanteen === null 
-                      ? "First, choose the canteen. Then select the stall you'd like to review."
+                      ? "Browse food stalls and submit feedback."
                       : "Select the food stall you would like to review to begin."
                     }
                   </p>
@@ -486,130 +561,68 @@ export default function FeedbackForm({ navigate }) {
 
                 {selectedCanteen === null ? (
                   /* SELECT CANTEEN SELECTION */
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '48px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: colors.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px' }}>
-                      SELECT CANTEEN
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', width: '100%' }}>
                       
-                      {/* High School Stall */}
+                      {/* High School Canteen */}
                       <div
+                        className="canteen-card"
                         onClick={() => {
                           setSelectedCanteen("SHS");
                           setSelectedStall("");
                         }}
-                        style={{
-                          width: '280px',
-                          padding: '36px 24px',
-                          backgroundColor: colors.white,
-                          borderRadius: '16px',
-                          border: `1px solid ${colors.border}`,
-                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          transition: 'all 0.25s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(12, 35, 64, 0.08)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
                       >
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444' }}>
-                          <UtensilsCrossed size={24} />
+                        <div className="canteen-card-icon" style={{ backgroundColor: '#FEF2F2', color: '#EF4444' }}>
+                          <UtensilsCrossed size={22} />
                         </div>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Highschool Canteen</h3>
-                          <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            Select &rarr;
+                          <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 2px 0' }}>High School Canteen</h3>
+                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>24 stalls • Main Building, 1st Floor</p>
+                          <span style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            View Stalls &rarr;
                           </span>
                         </div>
                       </div>
 
-                      {/* College Stall */}
+                      {/* College Canteen */}
                       <div
+                        className="canteen-card"
                         onClick={() => {
                           setSelectedCanteen("College");
                           setSelectedStall("");
                         }}
-                        style={{
-                          width: '280px',
-                          padding: '36px 24px',
-                          backgroundColor: colors.white,
-                          borderRadius: '16px',
-                          border: `1px solid ${colors.border}`,
-                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          transition: 'all 0.25s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(12, 35, 64, 0.08)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
                       >
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6' }}>
-                          <Utensils size={24} />
+                        <div className="canteen-card-icon" style={{ backgroundColor: '#EFF6FF', color: '#3B82F6' }}>
+                          <Utensils size={22} />
                         </div>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>College Canteen</h3>
-                          <span style={{ fontSize: '13px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            Select &rarr;
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Scan QR Card */}
-                      <div
-                        onClick={startScanner}
-                        style={{
-                          width: '280px',
-                          padding: '36px 24px',
-                          backgroundColor: colors.white,
-                          borderRadius: '16px',
-                          border: `1px solid ${colors.border}`,
-                          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          transition: 'all 0.25s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow = '0 12px 24px rgba(229, 168, 35, 0.15)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
-                      >
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
-                          <Camera size={24} />
-                        </div>
-                        <div>
-                          <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Scan QR Code</h3>
-                          <span style={{ fontSize: '13px', color: '#D97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            Open Camera &rarr;
+                          <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 2px 0' }}>College Canteen</h3>
+                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>31 stalls • Ground Floor</p>
+                          <span style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            View Stalls &rarr;
                           </span>
                         </div>
                       </div>
 
                     </div>
+
+                    {/* Divider */}
+                    <div style={{ width: '100%', maxWidth: '604px', height: '1px', backgroundColor: colors.border, margin: '24px 0 16px 0' }} />
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: colors.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px', textAlign: 'center', width: '100%' }}>
+                      Quick Actions
+                    </div>
+
+                    {/* Scan QR Code Button */}
+                    <div className="quick-action-btn" onClick={startScanner}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706', flexShrink: 0 }}>
+                        <Camera size={20} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '15px', fontWeight: 700, color: colors.navy, margin: '0 0 2px 0' }}>Scan QR Code</h4>
+                        <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>Point your camera at any stall QR code to review instantly</p>
+                      </div>
+                    </div>
+
                   </div>
                 ) : (
                   /* SELECT STALLS FILTERED BY CANTEEN */
@@ -625,7 +638,7 @@ export default function FeedbackForm({ navigate }) {
                         &larr; Change Canteen
                       </button>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: colors.navy, backgroundColor: selectedCanteen === 'College' ? '#EFF6FF' : '#FEF2F2', padding: '4px 10px', borderRadius: '12px' }}>
-                        {selectedCanteen === 'College' ? 'College Canteen' : 'Highschool Canteen'}
+                        {selectedCanteen === 'College' ? 'College Canteen' : 'High School Canteen'}
                       </span>
                     </div>
 
@@ -722,7 +735,7 @@ export default function FeedbackForm({ navigate }) {
                                       borderRadius: '4px',
                                       border: `1px solid ${stall.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
                                     }}>
-                                      {stall.canteen_group === 'College' ? 'College Canteen' : 'Highschool Canteen'}
+                                      {stall.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
                                     </span>
                                   )}
                                 </div>
