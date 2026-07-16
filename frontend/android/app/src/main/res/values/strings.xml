@@ -4,4 +4,6 @@
     <string name="title_activity_main">BiteCheck</string>
     <string name="package_name">org.ua.bitecheck</string>
     <string name="custom_url_scheme">org.ua.bitecheck</string>
+    <!-- Add this line: -->
+    <string name="server_client_id">319259210526-l3sekkpqa36qqvo9vkf1ci88lijmrnmq.apps.googleusercontent.com</string>
 </resources>
