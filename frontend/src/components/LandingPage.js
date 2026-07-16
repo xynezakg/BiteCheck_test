@@ -968,7 +968,6 @@ export default function LandingPage({ navigate }) {
             {/* Left Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', backgroundColor: 'rgba(229, 168, 35, 0.12)', border: '1px solid rgba(229, 168, 35, 0.25)', width: 'fit-content' }}>
-                <CheckCircle2 size={14} color="var(--gold)" />
             
               </div>
 
@@ -1845,7 +1844,6 @@ export default function LandingPage({ navigate }) {
       }}>
         <div className="container">
           <div className="grid-2">
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} className="reveal-left">
               <h2 className="section-title" style={{ color: 'var(--white)' }}>Verify Your Digital Feedback Receipt</h2>
               <p style={{ color: 'var(--gray-300)', fontSize: '15px', lineHeight: 1.6 }}>
