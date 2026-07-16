@@ -691,7 +691,13 @@ router.post('/admin/verify-password', requireAuth, async (req, res) => {
         return res.status(400).json({ error: "Password required." });
     }
     try {
-        const valid = await bcrypt.compare(password, req.user.password_hash);
+        const userResult = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "Admin account not found." });
+        }
+        const adminUser = userResult.rows[0];
+
+        const valid = await bcrypt.compare(password, adminUser.password_hash);
         if (!valid) {
             return res.status(401).json({ error: "Incorrect admin password." });
         }
@@ -711,7 +717,13 @@ router.post('/admin/feedbacks/purge', requireAuth, async (req, res) => {
         return res.status(400).json({ error: "Password required." });
     }
     try {
-        const valid = await bcrypt.compare(password, req.user.password_hash);
+        const userResult = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "Admin account not found." });
+        }
+        const adminUser = userResult.rows[0];
+
+        const valid = await bcrypt.compare(password, adminUser.password_hash);
         if (!valid) {
             return res.status(401).json({ error: "Incorrect admin password." });
         }
@@ -747,7 +759,13 @@ router.delete('/feedback/:id', requireAuth, async (req, res) => {
         return res.status(400).json({ error: "Password required for verification." });
     }
     try {
-        const valid = await bcrypt.compare(password, req.user.password_hash);
+        const userResult = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "Admin account not found." });
+        }
+        const adminUser = userResult.rows[0];
+
+        const valid = await bcrypt.compare(password, adminUser.password_hash);
         if (!valid) {
             return res.status(401).json({ error: "Incorrect admin password." });
         }
