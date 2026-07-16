@@ -477,20 +477,45 @@ export default function AdminDashboard({ navigate }) {
   };
 
   const handlePurgeRecord = (id) => {
-    showCustomModal(
-      "FINAL WARNING",
-      `Are you sure you want to permanently delete Record #${id}? This action cannot be undone and will delete it from Neon.`,
-      "confirm",
-      async () => {
+    setPasswordConfirm({
+      isOpen: true,
+      title: "Confirm Deletion",
+      message: `Are you sure you want to permanently delete Record #${id}? This action cannot be undone and requires admin authentication.`,
+      password: "",
+      loading: false,
+      error: "",
+      onConfirm: async (password) => {
         try {
-          await deleteFeedback(id);
+          await deleteFeedback(id, password);
           setFeedbacks(prev => prev.filter(f => f.id !== id));
           showCustomModal("Success", `Record #${id} has been permanently deleted.`, "success");
         } catch (err) {
-          showCustomModal("Error", "Failed to permanently delete record.", "error");
+          showCustomModal("Error", err.message || "Failed to permanently delete record.", "error");
+          throw err;
         }
       }
-    );
+    });
+  };
+
+  const handlePurgeAll = () => {
+    setPasswordConfirm({
+      isOpen: true,
+      title: "MASS PURGE WARNING",
+      message: "CRITICAL: You are about to permanently delete ALL feedback records from the database and Cloudinary. This action is irreversible. Enter admin password to proceed.",
+      password: "",
+      loading: false,
+      error: "",
+      onConfirm: async (password) => {
+        try {
+          await purgeAllFeedbacks(password);
+          setFeedbacks([]);
+          showCustomModal("Success", "All feedback records have been successfully purged.", "success");
+        } catch (err) {
+          showCustomModal("Error", err.message || "Failed to purge feedback records.", "error");
+          throw err;
+        }
+      }
+    });
   };
 
   const exportToCSV = () => {
