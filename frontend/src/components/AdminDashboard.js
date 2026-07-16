@@ -867,11 +867,9 @@ export default function AdminDashboard({ navigate }) {
                   style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: colors.white, fontSize: '15px', fontWeight: 600, color: colors.navy, outline: 'none', cursor: 'pointer', minWidth: '200px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
                 >
                   <option value="Overall">Overall Rating</option>
-                  <option value="Food">Food Quality</option>
-                  <option value="Service">Customer Service</option>
-                  <option value="Staff">Staff Politeness</option>
-                  <option value="Clean">Cleanliness</option>
-                  <option value="Value">Value for Money</option>
+                  {criteria.filter(c => c.is_active).map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1198,16 +1196,25 @@ export default function AdminDashboard({ navigate }) {
                                 {item.is_active ? "Active" : "Disabled"}
                               </button>
                             </td>
-                            <td style={{ padding: '20px 32px', textAlign: 'right' }}>
-                              <button 
-                                onClick={() => handleDeleteCriteria(item.id, item.name)}
-                                style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
+                            <td style={{ padding: '20px 32px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                               <button 
+                                 onClick={() => setEditingCriteria({ id: item.id, name: item.name })}
+                                 style={{ backgroundColor: 'transparent', border: 'none', color: colors.navy, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                 onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E2E8F0'}
+                                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                 title="Edit Criterion"
+                               >
+                                 <Edit size={16} />
+                               </button>
+                               <button 
+                                 onClick={() => handleDeleteCriteria(item.id, item.name)}
+                                 style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                 onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                               >
+                                 <Trash2 size={16} />
+                               </button>
+                             </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1470,9 +1477,21 @@ export default function AdminDashboard({ navigate }) {
                 <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>Only cryptographically verified authentic records are shown here.</p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '0 16px', height: '42px', width: '320px', border: `1px solid ${colors.border}` }}>
-                <Search size={18} color={colors.textMuted} style={{ marginRight: '12px', flexShrink: 0 }} />
-                <input type="text" placeholder="Search verified records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: colors.text }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                {userRole !== 'viewer' && feedbacks.length > 0 && (
+                  <button 
+                    onClick={handlePurgeAll}
+                    style={{ backgroundColor: colors.danger, color: colors.white, border: 'none', padding: '10px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#B91C1C'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.danger}
+                  >
+                    <Trash2 size={14} /> Purge Records
+                  </button>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '0 16px', height: '42px', width: '320px', border: `1px solid ${colors.border}` }}>
+                  <Search size={18} color={colors.textMuted} style={{ marginRight: '12px', flexShrink: 0 }} />
+                  <input type="text" placeholder="Search verified records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: colors.text }} />
+                </div>
               </div>
             </div>
 
@@ -1510,10 +1529,21 @@ export default function AdminDashboard({ navigate }) {
                         </td>
 
                         <td style={{ padding: '20px 12px', fontWeight: 700, color: colors.navy, fontSize: '15px' }}>{f.rating} <span style={{ color: colors.textMuted, fontWeight: 500 }}>/ 5</span></td>
-                        <td style={{ padding: '20px 12px', textAlign: 'right' }}>
-                          <button onClick={() => openModal(f)} style={{ backgroundColor: colors.white, border: `1px solid ${colors.border}`, color: colors.navy, fontSize: '13px', fontWeight: 600, padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.color = colors.white; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.white; e.currentTarget.style.color = colors.navy; }}>
+                        <td style={{ padding: '20px 12px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button onClick={() => openModal(f)} style={{ backgroundColor: colors.white, border: `1px solid ${colors.border}`, color: colors.navy, fontSize: '13px', fontWeight: 600, padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', boxSizing: 'border-box' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.navy; e.currentTarget.style.color = colors.white; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.white; e.currentTarget.style.color = colors.navy; }}>
                             View Full
                           </button>
+                          {userRole !== 'viewer' && (
+                            <button 
+                              onClick={() => handlePurgeRecord(f.id)} 
+                              style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                              title="Delete Feedback"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
