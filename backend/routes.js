@@ -465,7 +465,7 @@ router.put('/admin/criteria/:id', requireAuth, async (req, res) => {
         return res.status(403).json({ error: "Access denied. Admins only." });
     }
     const { id } = req.params;
-    const { is_active } = req.body;
+    const { is_active, name } = req.body;
 
     try {
         if (is_active === false) {
@@ -475,10 +475,23 @@ router.put('/admin/criteria/:id', requireAuth, async (req, res) => {
             }
         }
 
-        const result = await pool.query(
-            'UPDATE criteria SET is_active = $1 WHERE id = $2 RETURNING *',
-            [is_active, id]
-        );
+        let result;
+        if (name !== undefined && is_active !== undefined) {
+            result = await pool.query(
+                'UPDATE criteria SET is_active = $1, name = $2 WHERE id = $3 RETURNING *',
+                [is_active, name, id]
+            );
+        } else if (name !== undefined) {
+            result = await pool.query(
+                'UPDATE criteria SET name = $1 WHERE id = $2 RETURNING *',
+                [name, id]
+            );
+        } else {
+            result = await pool.query(
+                'UPDATE criteria SET is_active = $1 WHERE id = $2 RETURNING *',
+                [is_active, id]
+            );
+        }
         
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Criterion not found.' });
@@ -669,8 +682,76 @@ router.post('/verify', async (req, res) => {
     }
 });
 
-router.delete('/feedback/:id', async (req, res) => {
+router.post('/admin/verify-password', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { password } = req.body;
+    if (!password) {
+        return res.status(400).json({ error: "Password required." });
+    }
     try {
+        const valid = await bcrypt.compare(password, req.user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ error: "Incorrect admin password." });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Verify Password Error:", err);
+        res.status(500).json({ error: "Server error verifying password." });
+    }
+});
+
+router.post('/admin/feedbacks/purge', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { password } = req.body;
+    if (!password) {
+        return res.status(400).json({ error: "Password required." });
+    }
+    try {
+        const valid = await bcrypt.compare(password, req.user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ error: "Incorrect admin password." });
+        }
+
+        const rowsResult = await pool.query('SELECT attachment FROM feedbacks');
+        for (const row of rowsResult.rows) {
+            if (row.attachment) {
+                const publicId = extractPublicId(row.attachment);
+                if (publicId) {
+                    try {
+                        await cloudinary.uploader.destroy(publicId);
+                    } catch (e) {
+                        console.error("Cloudinary delete error during purge:", e);
+                    }
+                }
+            }
+        }
+
+        await pool.query('DELETE FROM feedbacks');
+        res.json({ message: "All feedback records purged successfully." });
+    } catch (err) {
+        console.error("Purge Error:", err.message);
+        res.status(500).json({ error: "Server Error purging records." });
+    }
+});
+
+router.delete('/feedback/:id', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { password } = req.body;
+    if (!password) {
+        return res.status(400).json({ error: "Password required for verification." });
+    }
+    try {
+        const valid = await bcrypt.compare(password, req.user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ error: "Incorrect admin password." });
+        }
+
         const feedbackPhoto = await getFeedbackPhoto(req.params.id);
         if (feedbackPhoto && feedbackPhoto.attachment) {
             const publicId = extractPublicId(feedbackPhoto.attachment);

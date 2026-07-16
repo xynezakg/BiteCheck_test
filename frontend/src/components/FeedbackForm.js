@@ -577,7 +577,9 @@ export default function FeedbackForm({ navigate }) {
                         </div>
                         <div>
                           <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 2px 0' }}>High School Canteen</h3>
-                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>24 stalls • Main Building, 1st Floor</p>
+                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>
+                            {loadingStalls ? '...' : availableStalls.filter(s => s.canteen_group === 'SHS').length} stalls • Main Building, 1st Floor
+                          </p>
                           <span style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
                             View Stalls &rarr;
                           </span>
@@ -597,7 +599,9 @@ export default function FeedbackForm({ navigate }) {
                         </div>
                         <div>
                           <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 2px 0' }}>College Canteen</h3>
-                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>31 stalls • Ground Floor</p>
+                          <p style={{ fontSize: '12px', color: colors.textMuted, margin: '0 0 4px 0', lineHeight: 1.3 }}>
+                            {loadingStalls ? '...' : availableStalls.filter(s => s.canteen_group === 'College').length} stalls • Ground Floor
+                          </p>
                           <span style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
                             View Stalls &rarr;
                           </span>

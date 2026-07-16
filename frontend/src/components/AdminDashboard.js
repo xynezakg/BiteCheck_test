@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria } from "../api";
+import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria, verifyAdminPassword, purgeAllFeedbacks } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
   LineChart, Line
 } from 'recharts';
-import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users } from 'lucide-react';
+import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users, Edit } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
 
@@ -69,6 +69,16 @@ export default function AdminDashboard({ navigate }) {
   const [criteria, setCriteria] = useState([]);
   const [loadingCriteria, setLoadingCriteria] = useState(false);
   const [newCriteriaName, setNewCriteriaName] = useState("");
+  const [editingCriteria, setEditingCriteria] = useState(null);
+  const [passwordConfirm, setPasswordConfirm] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    password: "",
+    loading: false,
+    error: "",
+    onConfirm: null
+  });
 
   const loadCriteria = async () => {
     try {
@@ -183,6 +193,41 @@ export default function AdminDashboard({ navigate }) {
     );
   };
 
+  const handleSaveCriteriaName = async () => {
+    if (!editingCriteria || !editingCriteria.name.trim()) return;
+    const name = editingCriteria.name.trim();
+    // eslint-disable-next-line no-useless-escape
+    if (/[\[\]:|/]/g.test(name)) {
+      showCustomModal("Validation Error", "Criteria name cannot contain invalid characters: [ ] : | /", "error");
+      return;
+    }
+    try {
+      await updateCriteria(editingCriteria.id, null, name);
+      setCriteria(prev => prev.map(c => c.id === editingCriteria.id ? { ...c, name } : c));
+      setEditingCriteria(null);
+      showCustomModal("Success", "Criterion updated successfully.", "success");
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to update criterion.", "error");
+    }
+  };
+
+  const handleConfirmPasswordAction = async () => {
+    if (!passwordConfirm.password) {
+      setPasswordConfirm(prev => ({ ...prev, error: "Password is required." }));
+      return;
+    }
+    setPasswordConfirm(prev => ({ ...prev, loading: true, error: "" }));
+    try {
+      // If it succeeded, run onConfirm callback with password
+      if (passwordConfirm.onConfirm) {
+        await passwordConfirm.onConfirm(passwordConfirm.password);
+      }
+      setPasswordConfirm(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      setPasswordConfirm(prev => ({ ...prev, loading: false, error: err.message || "Invalid credentials." }));
+    }
+  };
+
   const isAuditingRef = useRef(isAuditing);
   useEffect(() => { isAuditingRef.current = isAuditing; }, [isAuditing]);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, activeMenu]);
@@ -222,6 +267,7 @@ export default function AdminDashboard({ navigate }) {
     // Fetches the list of stalls for the dropdown filter!
     fetchStalls().then(data => setStallsList(data)).catch(console.error);
     getUserDemographics().then(data => setDemographics(data)).catch(console.error);
+    fetchAllCriteria().then(data => setCriteria(data)).catch(console.error);
 
     fetchAndAudit();
     const intervalId = setInterval(fetchAndAudit, 3000);
@@ -294,6 +340,13 @@ export default function AdminDashboard({ navigate }) {
   const categoryCounts = {};
   let count = 0;
 
+  // Align with active database criteria
+  const activeCriteriaNames = criteria.filter(c => c.is_active).map(c => c.name);
+  activeCriteriaNames.forEach(name => {
+    categoryTotals[name] = 0;
+    categoryCounts[name] = 0;
+  });
+
   dashboardFeedbacks.forEach(f => {
     const scoresMatch = f?.comment?.match(/\[Scores -> (.*?)\]/);
     if (scoresMatch) {
@@ -306,19 +359,21 @@ export default function AdminDashboard({ navigate }) {
           const rawName = subMatch[1].trim();
           const name = rawName === 'Clean' ? 'Cleanliness' : rawName;
           const val = parseInt(subMatch[2]);
-          categoryTotals[name] = (categoryTotals[name] || 0) + val;
-          categoryCounts[name] = (categoryCounts[name] || 0) + 1;
+          if (activeCriteriaNames.includes(name)) {
+            categoryTotals[name] = (categoryTotals[name] || 0) + val;
+            categoryCounts[name] = (categoryCounts[name] || 0) + 1;
+          }
         }
       });
     }
   });
 
-  const barData = Object.keys(categoryTotals).map(name => ({
+  const barData = activeCriteriaNames.map(name => ({
     name,
     score: categoryCounts[name] ? Number((categoryTotals[name] / categoryCounts[name]).toFixed(1)) : 0
   })).sort((a, b) => b.score - a.score);
 
-  const topCategory = barData.length > 0 ? barData[0] : { name: "N/A", score: 0 };
+  const topCategory = barData.length > 0 && barData[0].score > 0 ? barData[0] : { name: "N/A", score: 0 };
 
   // Calculate Stall Comparison Chart Data
   const stallScores = {};
@@ -1843,6 +1898,86 @@ export default function AdminDashboard({ navigate }) {
                   OK
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── EDIT CRITERIA MODAL ─── */}
+      {editingCriteria && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+          <div style={{ backgroundColor: colors.white, padding: '32px', borderRadius: '16px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', animation: 'fadeUp 0.3s ease' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: colors.navy, fontWeight: 700 }}>Edit Criterion</h3>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '8px', letterSpacing: '0.05em' }}>CRITERION NAME</label>
+              <input 
+                type="text" 
+                value={editingCriteria.name} 
+                onChange={e => setEditingCriteria(prev => ({ ...prev, name: e.target.value }))}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', color: colors.text, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={() => setEditingCriteria(null)}
+                style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveCriteriaName}
+                style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── SECURE PASSWORD GATE MODAL ─── */}
+      {passwordConfirm.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+          <div style={{ backgroundColor: colors.white, padding: '32px', borderRadius: '16px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', animation: 'fadeUp 0.3s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '50%' }}><ShieldAlert color="#EF4444" size={28} /></div>
+              <h3 style={{ margin: 0, fontSize: '20px', color: colors.navy, fontWeight: 700 }}>{passwordConfirm.title}</h3>
+            </div>
+
+            <p style={{ margin: '0 0 16px 0', color: colors.textMuted, fontSize: '15px', lineHeight: 1.6 }}>
+              {passwordConfirm.message}
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <input
+                type="password"
+                placeholder="Enter admin password to verify"
+                value={passwordConfirm.password}
+                onChange={e => setPasswordConfirm(prev => ({ ...prev, password: e.target.value }))}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+              {passwordConfirm.error && (
+                <div style={{ color: colors.danger, fontSize: '13px', fontWeight: 600, marginTop: '8px' }}>
+                  {passwordConfirm.error}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={() => setPasswordConfirm(prev => ({ ...prev, isOpen: false }))}
+                disabled={passwordConfirm.loading}
+                style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPasswordAction}
+                disabled={passwordConfirm.loading}
+                style={{ backgroundColor: colors.danger, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                {passwordConfirm.loading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : "Confirm Action"}
+              </button>
             </div>
           </div>
         </div>

@@ -134,9 +134,49 @@ export const verifyFeedback = async (data) => {
     return response.json();
 };
 
-export const deleteFeedback = async (id) => {
-    const response = await fetch(`${API_URL}/feedback/${id}`, { method: 'DELETE' });
-    return response.json();
+export const verifyAdminPassword = async (password) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/verify-password`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '' 
+        },
+        body: JSON.stringify({ password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Password verification failed');
+    return data;
+};
+
+export const deleteFeedback = async (id, password) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/feedback/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to delete record');
+    return data;
+};
+
+export const purgeAllFeedbacks = async (password) => {
+    const token = localStorage.getItem('ua_token');
+    const response = await fetch(`${API_URL}/admin/feedbacks/purge`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to purge records');
+    return data;
 };
 
 export const quarantineFeedback = async (id) => {
@@ -225,15 +265,19 @@ export const createCriteria = async (name) => {
     return data;
 };
 
-export const updateCriteria = async (id, isActive) => {
+export const updateCriteria = async (id, isActive, name) => {
     const token = localStorage.getItem('ua_token');
+    const body = {};
+    if (isActive !== undefined && isActive !== null) body.is_active = isActive;
+    if (name !== undefined && name !== null) body.name = name;
+    
     const response = await fetch(`${API_URL}/admin/criteria/${id}`, {
         method: 'PUT',
         headers: { 
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : '' 
         },
-        body: JSON.stringify({ is_active: isActive })
+        body: JSON.stringify(body)
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to update criterion');
