@@ -1169,6 +1169,7 @@ export default function LandingPage({ navigate }) {
             </div>
 
           </div>
+        </div>                
       </section>
 
       {/* ─── ABOUT SECTION ─── */}
