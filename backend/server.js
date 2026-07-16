@@ -7,23 +7,11 @@ const { keyPairFromSeed } = require('./eddsa');
 
 const app = express();
 
-// Set up CORS - Strictly allow only your frontend URLs
+// Set up CORS - Allow requests from local dev, mobile app, vercel, or Hostinger subdomain
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        const isAllowed = origin.includes('localhost') || 
-                          origin.startsWith('capacitor://') ||
-                          origin.endsWith('.vercel.app') || 
-                          origin.includes('vercel.app');
-        
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            console.warn(`[CORS] Blocked request from origin: ${origin}`);
-            callback(null, false);
-        }
+        // Allow requests from any origin to support Hostinger deployments and mobile app builds
+        callback(null, true);
     },
     credentials: true
 }));
