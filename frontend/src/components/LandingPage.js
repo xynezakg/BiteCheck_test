@@ -966,9 +966,7 @@ export default function LandingPage({ navigate }) {
           <div className="grid-2">
 
             {/* Left Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', backgroundColor: 'rgba(229, 168, 35, 0.12)', border: '1px solid rgba(229, 168, 35, 0.25)', width: 'fit-content' }}>
-            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">            
               </div>
 
               <h1 style={{ color: 'var(--white)', fontSize: 'clamp(36px, 5vw, 52px)', lineHeight: 1.1, margin: 0, fontWeight: 800, letterSpacing: '-0.03em' }}>
