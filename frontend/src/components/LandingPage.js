@@ -969,9 +969,7 @@ export default function LandingPage({ navigate }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', backgroundColor: 'rgba(229, 168, 35, 0.12)', border: '1px solid rgba(229, 168, 35, 0.25)', width: 'fit-content' }}>
                 <CheckCircle2 size={14} color="var(--gold)" />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  UA Student Canteen Portal
-                </span>
+            
               </div>
 
               <h1 style={{ color: 'var(--white)', fontSize: 'clamp(36px, 5vw, 52px)', lineHeight: 1.1, margin: 0, fontWeight: 800, letterSpacing: '-0.03em' }}>
@@ -1211,7 +1209,6 @@ export default function LandingPage({ navigate }) {
 
             {/* Right Column: Narrative */}
             <div className="reveal-right">
-              <span className="section-tag">About BiteCheck</span>
               <h2 className="section-title">Centralizing Canteen Evaluations for the UA Community</h2>
               <p className="section-desc" style={{ marginBottom: '20px' }}>
                 Canteen dining is an essential part of daily life at the University of the Assumption. To ensure that students, faculty, and staff receive nutritious, sanitary, and reasonably priced meals, BiteCheck provides a direct digital link to canteen management.
@@ -1246,7 +1243,6 @@ export default function LandingPage({ navigate }) {
       <section id="reviews" className="section-padding" style={{ backgroundColor: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)', borderBottom: '1px solid var(--gray-200)' }}>
         <div className="container" style={{ textAlign: 'center' }}>
           <div className="section-header reveal-up">
-            <span className="section-tag">Student Voices</span>
             <h2 className="section-title">What Students are Saying</h2>
             <p className="section-desc">
               Highly rated evaluations submitted directly by students and staff dining at University of the Assumption canteen stalls.
@@ -1326,7 +1322,6 @@ export default function LandingPage({ navigate }) {
       <section id="features" className="section-padding" style={{ backgroundColor: 'var(--white)' }}>
         <div className="container">
           <div className="section-header reveal-up">
-            <span className="section-tag">Key Features</span>
             <h2 className="section-title">Designed for Campus Dining Needs</h2>
             <p className="section-desc">
               BiteCheck is structured specifically to make the canteen feedback collection process simple, reliable, and secure.
@@ -1409,7 +1404,6 @@ export default function LandingPage({ navigate }) {
       <section id="how-it-works" className="section-padding" style={{ backgroundColor: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)', borderBottom: '1px solid var(--gray-200)' }}>
         <div className="container">
           <div className="section-header reveal-up">
-            <span className="section-tag">How It Works</span>
             <h2 className="section-title">Submit Canteen Feedback in Minutes</h2>
             <p className="section-desc">
               Understand the quick process to submit your authenticated canteen evaluation.
@@ -1479,7 +1473,6 @@ export default function LandingPage({ navigate }) {
 
             {/* Left Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="reveal-left">
-              <span className="section-tag">Mobile Experience</span>
               <h2 className="section-title">Take BiteCheck Anywhere</h2>
               <p className="section-desc">
                 Download the BiteCheck mobile app and conveniently submit canteen evaluations anytime, anywhere within the University of the Assumption campus directly from your smartphone.
@@ -1813,7 +1806,6 @@ export default function LandingPage({ navigate }) {
       <section className="section-padding" style={{ backgroundColor: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)', borderBottom: '1px solid var(--gray-200)' }}>
         <div className="container">
           <div className="section-header reveal-up">
-            <span className="section-tag">Value Proposition</span>
             <h2 className="section-title">Benefits of Sharing Canteen Reviews</h2>
             <p className="section-desc">
               Your honest reviews make a difference in building a better dining environment for the University of the Assumption.
@@ -1855,7 +1847,6 @@ export default function LandingPage({ navigate }) {
           <div className="grid-2">
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} className="reveal-left">
-              <span className="section-tag" style={{ backgroundColor: 'rgba(229, 168, 35, 0.12)', color: 'var(--gold)' }}>Trust & Security</span>
               <h2 className="section-title" style={{ color: 'var(--white)' }}>Verify Your Digital Feedback Receipt</h2>
               <p style={{ color: 'var(--gray-300)', fontSize: '15px', lineHeight: 1.6 }}>
                 BiteCheck protects student feedback from unauthorized alteration. Every review generates a secure verification receipt containing an Ed25519 cryptographic signature. Anyone can audit the validity of their submission to ensure the database record remains intact.
@@ -1898,7 +1889,6 @@ export default function LandingPage({ navigate }) {
       <section id="faq" className="section-padding" style={{ backgroundColor: 'var(--gray-50)' }}>
         <div className="container">
           <div className="section-header reveal-up">
-            <span className="section-tag">FAQ</span>
             <h2 className="section-title">Frequently Asked Questions</h2>
             <p className="section-desc">
               Get quick answers to common questions about using BiteCheck at the University of the Assumption.
@@ -1984,7 +1974,6 @@ export default function LandingPage({ navigate }) {
         <div style={{ position: 'absolute', bottom: '-50%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(229,168,35,0.03)', zIndex: 0 }} />
 
         <div className="container reveal-up" style={{ position: 'relative', zIndex: 1, maxWidth: '700px' }}>
-          <span className="section-tag" style={{ backgroundColor: 'rgba(229,168,35,0.1)', color: 'var(--gold)' }}>Ready to Evaluate?</span>
           <h2 style={{ color: 'var(--white)', fontSize: '32px', marginBottom: '16px', fontWeight: 800 }}>
             Help Improve the University Canteen Experience Today
           </h2>
