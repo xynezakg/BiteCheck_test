@@ -39,8 +39,8 @@ export default function AdminDashboard({ navigate }) {
   const [rankingFilter, setRankingFilter] = useState("Overall");
 
   useEffect(() => {
-    const token = localStorage.getItem('ua_token');
-    const userStr = localStorage.getItem('ua_user');
+    const token = localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token');
+    const userStr = localStorage.getItem('ua_user') || sessionStorage.getItem('ua_user');
     
     if (!token || !userStr) {
       window.location.href = '/';
@@ -54,6 +54,48 @@ export default function AdminDashboard({ navigate }) {
     } catch (e) {
       window.location.href = '/';
     }
+  }, []);
+
+  // Idle Timer / Auto-Lock for Admin Dashboard (30-minute timeout)
+  useEffect(() => {
+    let timeoutId;
+    const idleLimit = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(logoutDueToInactivity, idleLimit);
+    };
+
+    const logoutDueToInactivity = () => {
+      localStorage.removeItem('ua_token');
+      localStorage.removeItem('ua_user');
+      sessionStorage.removeItem('ua_token');
+      sessionStorage.removeItem('ua_user');
+      
+      showCustomModal(
+        "Session Expired",
+        "Your session has been closed due to 30 minutes of inactivity. Redirecting to login...",
+        "success",
+        () => {
+          window.location.href = '/admin';
+        }
+      );
+      
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 4000);
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    const handleActivity = () => resetTimer();
+
+    events.forEach(event => window.addEventListener(event, handleActivity));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+    };
   }, []);
 
   // State for the Stall Filter dropdown
@@ -866,7 +908,7 @@ export default function AdminDashboard({ navigate }) {
             <div style={{ fontSize: '14px', fontWeight: 600, color: colors.white, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userName}</div>
             <div style={{ fontSize: '12px', color: '#94A3B8' }}>{userRole === 'viewer' ? 'Read-Only Viewer' : 'System Admin'}</div>
           </div>
-          <LogOut size={18} color="#94A3B8" style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = colors.white} onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'} onClick={() => { localStorage.removeItem('ua_token'); localStorage.removeItem('ua_user'); window.location.href = '/'; }} />
+          <LogOut size={18} color="#94A3B8" style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = colors.white} onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'} onClick={() => { localStorage.removeItem('ua_token'); localStorage.removeItem('ua_user'); sessionStorage.removeItem('ua_token'); sessionStorage.removeItem('ua_user'); window.location.href = '/'; }} />
         </div>
       </div>
 

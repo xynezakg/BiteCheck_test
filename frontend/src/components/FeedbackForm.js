@@ -129,8 +129,8 @@ export default function FeedbackForm({ navigate }) {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('ua_user');
-    const storedToken = localStorage.getItem('ua_token');
+    const storedUser = localStorage.getItem('ua_user') || sessionStorage.getItem('ua_user');
+    const storedToken = localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token');
 
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
@@ -270,6 +270,8 @@ export default function FeedbackForm({ navigate }) {
   const handleLogout = () => {
     localStorage.removeItem('ua_token');
     localStorage.removeItem('ua_user');
+    sessionStorage.removeItem('ua_token');
+    sessionStorage.removeItem('ua_user');
     window.location.href = '/';
   };
 

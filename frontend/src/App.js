@@ -22,8 +22,8 @@ export default function App() {
 
     // 2. Bypass landing page entirely on mobile app subsequent launches
     if (isMobileApp) {
-      const token = localStorage.getItem('ua_token');
-      const userStr = localStorage.getItem('ua_user');
+      const token = localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token');
+      const userStr = localStorage.getItem('ua_user') || sessionStorage.getItem('ua_user');
       if (token && userStr) {
         return "feedback";
       } else {

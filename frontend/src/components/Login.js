@@ -100,8 +100,13 @@ export default function Login({ navigate }) {
         setShowOnboarding(true);
         setLoading(false);
       } else {
-        localStorage.setItem('ua_token', data.token);
-        localStorage.setItem('ua_user', JSON.stringify(data.user));
+        if (Capacitor.isNativePlatform()) {
+          localStorage.setItem('ua_token', data.token);
+          localStorage.setItem('ua_user', JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem('ua_token', data.token);
+          sessionStorage.setItem('ua_user', JSON.stringify(data.user));
+        }
 
         if (data.user.role === 'admin') {
           navigate('admin');
@@ -148,8 +153,13 @@ export default function Login({ navigate }) {
         academic_level: onboardingAcademicLevel
       });
 
-      localStorage.setItem('ua_token', data.token);
-      localStorage.setItem('ua_user', JSON.stringify(data.user));
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem('ua_token', data.token);
+        localStorage.setItem('ua_user', JSON.stringify(data.user));
+      } else {
+        sessionStorage.setItem('ua_token', data.token);
+        sessionStorage.setItem('ua_user', JSON.stringify(data.user));
+      }
       setShowOnboarding(false);
       navigate('feedback');
     } catch (err) {
@@ -179,8 +189,13 @@ export default function Login({ navigate }) {
     try {
       if (isLogin) {
         const data = await loginUser({ ua_id_or_email: uaId, password });
-        localStorage.setItem('ua_token', data.token);
-        localStorage.setItem('ua_user', JSON.stringify(data.user));
+        if (Capacitor.isNativePlatform()) {
+          localStorage.setItem('ua_token', data.token);
+          localStorage.setItem('ua_user', JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem('ua_token', data.token);
+          sessionStorage.setItem('ua_user', JSON.stringify(data.user));
+        }
 
         if (data.user.role === 'admin') {
           navigate('admin');

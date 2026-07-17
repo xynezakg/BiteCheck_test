@@ -29,8 +29,8 @@ export default function AdminLogin({ navigate }) {
         return;
       }
 
-      localStorage.setItem("ua_token", data.token);
-      localStorage.setItem("ua_user", JSON.stringify(data.user));
+      sessionStorage.setItem("ua_token", data.token);
+      sessionStorage.setItem("ua_user", JSON.stringify(data.user));
       navigate("admin-dashboard");
     } catch (err) {
       setError(err.message || "Invalid credentials.");

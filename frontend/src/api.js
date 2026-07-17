@@ -35,7 +35,7 @@ export const registerUser = async (userData) => {
 // --- SECURE FEEDBACK ---
 
 export const submitFeedback = async (payload) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
 
     const response = await fetch(`${API_URL}/feedback`, {
         method: 'POST',
@@ -112,7 +112,7 @@ export const getAllFeedbacks = async () => {
 };
 
 export const getAdminFeedbacks = async () => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/feedbacks`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -135,7 +135,7 @@ export const verifyFeedback = async (data) => {
 };
 
 export const verifyAdminPassword = async (password) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/verify-password`, {
         method: 'POST',
         headers: { 
@@ -150,7 +150,7 @@ export const verifyAdminPassword = async (password) => {
 };
 
 export const deleteFeedback = async (id, password) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/feedback/${id}`, {
         method: 'DELETE',
         headers: {
@@ -165,7 +165,7 @@ export const deleteFeedback = async (id, password) => {
 };
 
 export const purgeAllFeedbacks = async (password) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/feedbacks/purge`, {
         method: 'POST',
         headers: {
@@ -202,7 +202,7 @@ export const forgotPassword = async (email) => {
 };
 
 export const fetchUsers = async () => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/users`, {
         headers: { 
             'Authorization': token ? `Bearer ${token}` : '' 
@@ -216,7 +216,7 @@ export const fetchUsers = async () => {
 };
 
 export const deleteUser = async (id) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/users/${id}`, {
         method: 'DELETE',
         headers: { 
@@ -237,7 +237,7 @@ export const fetchActiveCriteria = async () => {
 };
 
 export const fetchAllCriteria = async () => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/criteria`, {
         headers: { 
             'Authorization': token ? `Bearer ${token}` : '' 
@@ -251,7 +251,7 @@ export const fetchAllCriteria = async () => {
 };
 
 export const createCriteria = async (name) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/criteria`, {
         method: 'POST',
         headers: { 
@@ -266,7 +266,7 @@ export const createCriteria = async (name) => {
 };
 
 export const updateCriteria = async (id, isActive, name) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const body = {};
     if (isActive !== undefined && isActive !== null) body.is_active = isActive;
     if (name !== undefined && name !== null) body.name = name;
@@ -285,7 +285,7 @@ export const updateCriteria = async (id, isActive, name) => {
 };
 
 export const deleteCriteria = async (id) => {
-    const token = localStorage.getItem('ua_token');
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
     const response = await fetch(`${API_URL}/admin/criteria/${id}`, {
         method: 'DELETE',
         headers: { 
