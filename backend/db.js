@@ -136,7 +136,12 @@ const addFeedback = async ({ user_id, customer_name, rating, comment, signature,
 };
 
 async function getAllFeedback() {
-    const result = await pool.query(`SELECT * FROM feedbacks ORDER BY created_at DESC`);
+    const result = await pool.query(`
+        SELECT f.*, u.full_name as student_real_name, u.ua_id as student_ua_id
+        FROM feedbacks f
+        LEFT JOIN users u ON f.user_id = u.id
+        ORDER BY f.created_at DESC
+    `);
     return result.rows;
 }
 

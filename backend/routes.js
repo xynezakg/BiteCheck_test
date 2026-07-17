@@ -586,8 +586,9 @@ router.get('/feedbacks', async (req, res) => {
         const rows = await getAllFeedback();
 
         const verifiedRows = rows.map(row => {
+            const verifyName = row.is_anonymous ? "Anonymous Student" : row.customer_name;
             const feedbackForVerify = {
-                customer_name: row.customer_name,
+                customer_name: verifyName,
                 rating: row.rating,
                 comment: row.comment
             };
@@ -601,6 +602,10 @@ router.get('/feedbacks', async (req, res) => {
 
             const has_attachment = !!row.attachment;
             delete row.attachment;
+            
+            // SECURITY: Explicitly strip real student identity keys to prevent leaks in public JSON response
+            delete row.student_real_name;
+            delete row.student_ua_id;
 
             // Make it anonymous for the public view
             const finalRow = { ...row, _is_signature_valid: valid, has_attachment };
@@ -625,8 +630,9 @@ router.get('/admin/feedbacks', requireAuth, async (req, res) => {
         const rows = await getAllFeedback();
 
         const verifiedRows = rows.map(row => {
+            const verifyName = row.is_anonymous ? "Anonymous Student" : row.customer_name;
             const feedbackForVerify = {
-                customer_name: row.customer_name,
+                customer_name: verifyName,
                 rating: row.rating,
                 comment: row.comment
             };
@@ -641,8 +647,12 @@ router.get('/admin/feedbacks', requireAuth, async (req, res) => {
             const has_attachment = !!row.attachment;
             delete row.attachment;
 
-            // Admin gets real name even if is_anonymous is true!
-            return { ...row, _is_signature_valid: valid, has_attachment };
+            // Admin gets real name in customer_name even if is_anonymous is true!
+            const finalRow = { ...row, _is_signature_valid: valid, has_attachment };
+            if (row.is_anonymous && row.student_real_name) {
+                finalRow.customer_name = `${row.student_real_name} (Anonymous)`;
+            }
+            return finalRow;
         });
 
         res.json(verifiedRows);
@@ -803,8 +813,9 @@ router.put('/feedback/:id/quarantine', async (req, res) => {
 // --- PDF REPORT GENERATION ROUTES ---
 const getVerifiedFeedbacks = (feedbacks) => {
     return feedbacks.filter(row => {
+        const verifyName = row.is_anonymous ? "Anonymous Student" : row.customer_name;
         const feedbackForVerify = {
-            customer_name: row.customer_name,
+            customer_name: verifyName,
             rating: row.rating,
             comment: row.comment
         };
