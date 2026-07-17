@@ -535,7 +535,10 @@ router.delete('/admin/criteria/:id', requireAuth, async (req, res) => {
 router.post('/feedback', requireAuth, async (req, res) => {
     let { rating, comment, attachment, signature, public_key, is_anonymous } = req.body;
 
-    const customer_name = req.user.full_name;
+    let customer_name = req.user.full_name;
+    if (is_anonymous) {
+        customer_name = "Anonymous Student";
+    }
     const user_id = req.user.id;
 
     rating = Number(rating);

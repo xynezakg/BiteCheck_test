@@ -4,7 +4,10 @@ nacl.util = require('tweetnacl-util');
 function serializeForSignature(feedbackObj) {
     const name = feedbackObj.customer_name ? String(feedbackObj.customer_name).trim() : "";
     const rating = Number(feedbackObj.rating) || 0;
-    const comment = feedbackObj.comment ? String(feedbackObj.comment).trim() : "";
+    
+    // Normalize newlines to standard LF (\n) to ensure cross-platform cryptographic consistency
+    let comment = feedbackObj.comment ? String(feedbackObj.comment).trim() : "";
+    comment = comment.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
     //Extract the image so it is protected by the hash
     const attachment = feedbackObj.attachment ? String(feedbackObj.attachment) : ""; 
