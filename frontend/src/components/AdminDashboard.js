@@ -8,6 +8,9 @@ import {
 } from 'recharts';
 import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users, Edit } from 'lucide-react';
 
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+
 const API_URL = process.env.REACT_APP_API_URL || 'https://bite-check-backend.vercel.app/api';
 
 export default function AdminDashboard({ navigate }) {
@@ -69,7 +72,14 @@ export default function AdminDashboard({ navigate }) {
       timeoutId = setTimeout(logoutDueToInactivity, idleLimit);
     };
 
-    const logoutDueToInactivity = () => {
+    const logoutDueToInactivity = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          await GoogleAuth.signOut();
+        }
+      } catch (err) {
+        console.error("Google signOut error:", err);
+      }
       localStorage.removeItem('ua_token');
       localStorage.removeItem('ua_user');
       sessionStorage.removeItem('ua_token');
@@ -933,7 +943,20 @@ export default function AdminDashboard({ navigate }) {
             <div style={{ fontSize: '14px', fontWeight: 600, color: colors.white, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userName}</div>
             <div style={{ fontSize: '12px', color: '#94A3B8' }}>{userRole === 'viewer' ? 'Read-Only Viewer' : 'System Admin'}</div>
           </div>
-          <LogOut size={18} color="#94A3B8" style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = colors.white} onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'} onClick={() => { localStorage.removeItem('ua_token'); localStorage.removeItem('ua_user'); sessionStorage.removeItem('ua_token'); sessionStorage.removeItem('ua_user'); window.location.href = '/'; }} />
+          <LogOut size={18} color="#94A3B8" style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = colors.white} onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'} onClick={async () => {
+            try {
+              if (Capacitor.isNativePlatform()) {
+                await GoogleAuth.signOut();
+              }
+            } catch (err) {
+              console.error("Google signOut error:", err);
+            }
+            localStorage.removeItem('ua_token');
+            localStorage.removeItem('ua_user');
+            sessionStorage.removeItem('ua_token');
+            sessionStorage.removeItem('ua_user');
+            window.location.href = '/';
+          }} />
         </div>
       </div>
 

@@ -126,7 +126,7 @@ export default function Login({ navigate }) {
 
     try {
       await GoogleAuth.initialize();
-      const result = await GoogleAuth.signIn();
+      const result = await GoogleAuth.signIn({ prompt: 'select_account' });
       if (result && result.authentication && result.authentication.idToken) {
         const idToken = result.authentication.idToken;
         await handleGoogleCredentialResponse({ credential: idToken });

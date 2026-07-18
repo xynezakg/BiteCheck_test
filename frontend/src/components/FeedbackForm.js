@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls, fetchActiveCriteria } from "../api";
 import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed, Camera } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // Client-Side Cryptography
 import naclUtil from 'tweetnacl-util';
@@ -267,7 +269,14 @@ export default function FeedbackForm({ navigate }) {
   const overallRating = criteriaList.length > 0 ? Math.round(totalScore / criteriaList.length) : 5;
 
   // Prevents white screen on logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await GoogleAuth.signOut();
+      }
+    } catch (err) {
+      console.error("Google signOut error:", err);
+    }
     localStorage.removeItem('ua_token');
     localStorage.removeItem('ua_user');
     sessionStorage.removeItem('ua_token');
