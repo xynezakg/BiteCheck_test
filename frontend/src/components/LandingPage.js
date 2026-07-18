@@ -34,6 +34,8 @@ export default function LandingPage({ navigate }) {
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
 
   const [activeSection, setActiveSection] = useState('home');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Monitor scroll for glass header transition
   useEffect(() => {
@@ -561,6 +563,8 @@ export default function LandingPage({ navigate }) {
           border: 1px solid var(--gray-200);
           overflow: hidden;
           width: 100%;
+          max-width: 480px;
+          margin: 0 auto;
           text-align: left;
         }
 
@@ -609,7 +613,7 @@ export default function LandingPage({ navigate }) {
         /* Features Cards Grid */
         .grid-3 {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
           gap: 30px;
         }
 
@@ -792,7 +796,7 @@ export default function LandingPage({ navigate }) {
         /* Reviews Feed styles */
         .reviews-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
           gap: 24px;
           margin-top: 30px;
         }
@@ -864,6 +868,44 @@ export default function LandingPage({ navigate }) {
           gap: 12px;
         }
 
+        /* Responsive Footer Grid */
+        .footer-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: 40px;
+          margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+          .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 30px;
+          }
+        }
+
+        /* Hero layout responsiveness and centering */
+        .hero-left-column {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .hero-buttons {
+          display: flex;
+          gap: 16px;
+          margin-top: 12px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 900px) {
+          .hero-left-column {
+            align-items: center;
+            text-align: center;
+          }
+          .hero-buttons {
+            justify-content: center;
+          }
+        }
       `}</style>
 
       {/* ─── STICKY HEADER ─── */}
@@ -966,7 +1008,7 @@ export default function LandingPage({ navigate }) {
           <div className="grid-2">
 
             {/* Left Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up">            
+            <div className="animate-fade-in-up hero-left-column">
 
               <h1 style={{ color: 'var(--white)', fontSize: 'clamp(36px, 5vw, 52px)', lineHeight: 1.1, margin: 0, fontWeight: 800, letterSpacing: '-0.03em' }}>
                 Share Your Dining Experience at the <span style={{ color: 'var(--gold)' }}>UA Canteen</span>
@@ -976,7 +1018,7 @@ export default function LandingPage({ navigate }) {
                 Browse University canteen food stalls, read real-time evaluations from fellow students, and submit your ratings. Help improve campus dining quality through direct and verified feedback.
               </p>
 
-              <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap' }}>
+              <div className="hero-buttons">
                 <button className="btn btn-gold" onClick={() => navigate('student-login')} style={{ padding: '14px 28px', fontSize: '15px' }}>
                   Start Canteen Feedback <ArrowRight size={18} />
                 </button>
@@ -1992,7 +2034,7 @@ export default function LandingPage({ navigate }) {
       }}>
         <div className="container">
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '40px', marginBottom: '40px' }}>
+          <div className="footer-grid">
             {/* Branding Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2031,15 +2073,137 @@ export default function LandingPage({ navigate }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontSize: '12px' }}>
             <span>© 2026 University of the Assumption. All Rights Reserved.</span>
-            <span style={{ color: 'var(--gray-300)', display: 'flex', gap: '8px' }}>
-              <span>Privacy Policy</span>
+            <span style={{ color: 'var(--gray-300)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                onClick={() => setShowPrivacyModal(true)} 
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: 'inherit', fontFamily: 'inherit' }}
+              >
+                Privacy Policy
+              </button>
               <span>•</span>
-              <span>Terms of Service</span>
+              <button 
+                onClick={() => setShowTermsModal(true)} 
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: 'inherit', fontFamily: 'inherit' }}
+              >
+                Terms of Service
+              </button>
             </span>
           </div>
 
         </div>
       </footer>
+
+      {/* ─── PRIVACY POLICY MODAL ─── */}
+      {showPrivacyModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(6, 19, 36, 0.75)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--white)', borderRadius: '16px',
+            width: '100%', maxWidth: '600px', maxHeight: '80vh',
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            overflow: 'hidden', border: '1px solid var(--gray-200)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid var(--gray-200)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--navy)' }}>Privacy Policy</h3>
+              <button onClick={() => setShowPrivacyModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-600)', display: 'flex', alignItems: 'center' }}><X size={20} /></button>
+            </div>
+            {/* Modal Content */}
+            <div style={{ padding: '24px', overflowY: 'auto', fontSize: '14px', lineHeight: 1.6, color: 'var(--gray-700)', textAlign: 'left' }}>
+              <p style={{ marginTop: 0 }}><strong>Effective Date: July 19, 2026</strong></p>
+              <p>Welcome to BiteCheck, the canteen evaluation platform of the University of the Assumption (UA). Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you use our platform.</p>
+              
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>1. Information We Collect</h4>
+              <p>We collect minimal information required to ensure secure and verified canteen evaluations:</p>
+              <ul>
+                <li><strong>Official Email Address:</strong> We only authenticate users using their verified UA Google Account (ending in <code>@ua.edu.ph</code>).</li>
+                <li><strong>Google Profile Data:</strong> We access your profile name to verify stakeholder identity.</li>
+                <li><strong>Feedback Records:</strong> Ratings, stall selections, and written comments you submit.</li>
+              </ul>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>2. How We Use Your Information</h4>
+              <p>We use the collected information to:</p>
+              <ul>
+                <li>Validate that ratings are submitted by authorized UA students, faculty, or staff.</li>
+                <li>Provide stall owners with analytical feedback to improve canteen menu and service quality.</li>
+                <li>Verify submission integrity using cryptographic receipt signatures.</li>
+              </ul>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>3. Information Sharing and Disclosure</h4>
+              <p>We do not sell or rent your personal information. Aggregated, anonymous feedback data is shared with canteen managers. Your email and name are strictly protected and only referenced by the system to prevent double-voting or malicious spam.</p>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>4. Data Security</h4>
+              <p>BiteCheck uses modern industry standards to protect your data. Every feedback record is cryptographically signed at the source using Ed25519 signatures. If records are modified, the seal is broken and flagged instantly, ensuring total data integrity.</p>
+            </div>
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--gray-200)', display: 'flex', justifyContent: 'flex-end', backgroundColor: 'var(--gray-50)' }}>
+              <button className="btn btn-primary" onClick={() => setShowPrivacyModal(false)} style={{ padding: '8px 20px', fontSize: '13px' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TERMS OF SERVICE MODAL ─── */}
+      {showTermsModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(6, 19, 36, 0.75)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--white)', borderRadius: '16px',
+            width: '100%', maxWidth: '600px', maxHeight: '80vh',
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            overflow: 'hidden', border: '1px solid var(--gray-200)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid var(--gray-200)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--navy)' }}>Terms of Service</h3>
+              <button onClick={() => setShowTermsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-600)', display: 'flex', alignItems: 'center' }}><X size={20} /></button>
+            </div>
+            {/* Modal Content */}
+            <div style={{ padding: '24px', overflowY: 'auto', fontSize: '14px', lineHeight: 1.6, color: 'var(--gray-700)', textAlign: 'left' }}>
+              <p style={{ marginTop: 0 }}><strong>Effective Date: July 19, 2026</strong></p>
+              <p>Please read these Terms of Service ("Terms") carefully before using the BiteCheck evaluation platform at the University of the Assumption.</p>
+              
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>1. Acceptance of Terms</h4>
+              <p>By logging in and submitting canteen reviews, you represent that you are an active stakeholder of the University of the Assumption and agree to abide by these Terms.</p>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>2. Authorized Accounts Only</h4>
+              <p>Access is restricted strictly to users logging in via official <code>@ua.edu.ph</code> Google accounts. Impersonation of other stakeholders or stall owners is prohibited.</p>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>3. Review Guidelines & Civility</h4>
+              <p>To keep the platform constructive, all submitted feedback must:</p>
+              <ul>
+                <li>Be based on genuine food and service experiences at the UA Canteen.</li>
+                <li>Be constructive, objective, and polite.</li>
+                <li>Avoid profanity, defamation, harassment, or direct personal attacks against canteen personnel.</li>
+              </ul>
+              <p>Reviews violating these guidelines may be quarantined or removed by administration.</p>
+
+              <h4 style={{ color: 'var(--navy)', margin: '20px 0 8px', fontSize: '15px', fontWeight: 700 }}>4. Cryptographic Validation</h4>
+              <p>BiteCheck generates tamper-evident verification receipts signed using source-level cryptography. Users agree that their public keys will be recorded alongside their submitted scores for verification auditing.</p>
+            </div>
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--gray-200)', display: 'flex', justifyContent: 'flex-end', backgroundColor: 'var(--gray-50)' }}>
+              <button className="btn btn-primary" onClick={() => setShowTermsModal(false)} style={{ padding: '8px 20px', fontSize: '13px' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

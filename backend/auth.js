@@ -38,6 +38,10 @@ const getVerificationEmailTemplate = (name, verifyUrl) => {
 const registerUser = async (req, res) => {
     const { ua_id, full_name, role, password, academic_level, email } = req.body;
 
+    if (role === 'student') {
+        return res.status(403).json({ error: 'Student registration is disabled. Please sign in with Google.' });
+    }
+
     // BACKEND VALIDATION: Enforce 10-digit rule
     if (!isValidUaId(ua_id) && role !== 'admin') {
         return res.status(400).json({ error: 'Invalid format. UA ID must be exactly 10 digits with no dashes.' });
@@ -132,41 +136,119 @@ const loginUser = async (req, res) => {
 };
 
 const googleLogin = async (req, res) => {
-    const { idToken } = req.body;
+    const { idToken, acceptedToa, academicLevel } = req.body;
     if (!idToken) return res.status(400).json({ error: 'Google ID token is required.' });
 
+    if (!process.env.GOOGLE_CLIENT_ID) {
+        console.error("Configuration Error: GOOGLE_CLIENT_ID is not set in backend environment.");
+        return res.status(500).json({ error: "Backend configuration error: GOOGLE_CLIENT_ID is missing." });
+    }
+
     try {
-        let email, name;
-        if (idToken.startsWith("mock-google-token-payload-")) {
-            email = "test.student@ua.edu.ph";
-            name = "Test Student Mobile";
-        } else {
-            const ticket = await googleClient.verifyIdToken({
-                idToken,
-                audience: process.env.GOOGLE_CLIENT_ID
-            });
-            const payload = ticket.getPayload();
-            email = payload.email;
-            name = payload.name;
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        
+        if (!payload) {
+            return res.status(401).json({ error: 'Invalid Google authentication token payload.' });
         }
 
+        // Verify token issuer
+        const issuer = payload.iss;
+        if (issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
+            return res.status(401).json({ error: 'Invalid token issuer.' });
+        }
+
+        // Verify token expiration
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp < now) {
+            return res.status(401).json({ error: 'Google token has expired.' });
+        }
+
+        // Require email_verified === true
+        if (payload.email_verified !== true) {
+            return res.status(401).json({ error: 'Unverified Google email address.' });
+        }
+
+        const email = payload.email.toLowerCase().trim();
+        const name = payload.name;
+        const sub = payload.sub;
+        const picture = payload.picture || null;
+
         // Restrict to @ua.edu.ph
-        if (!email || !email.endsWith('@ua.edu.ph')) {
+        if (!email.endsWith('@ua.edu.ph')) {
             return res.status(403).json({ error: 'Access denied. You must use an official @ua.edu.ph email address.' });
         }
 
-        // Check if user exists
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        const user = result.rows[0];
+        // Check if user exists by google_sub first, then email
+        let userResult = await pool.query('SELECT * FROM users WHERE google_sub = $1', [sub]);
+        let user = userResult.rows[0];
 
         if (!user) {
-            // New user -> requires onboarding
-            return res.json({ requiresOnboarding: true, email, name });
+            userResult = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [email]);
+            user = userResult.rows[0];
         }
 
-        // Returning user -> verify if they have student ID
-        if (!user.ua_id) {
-            return res.json({ requiresOnboarding: true, email, name });
+        const isNewGoogleUser = !user || !user.google_sub;
+        if (isNewGoogleUser) {
+            if (!acceptedToa || !academicLevel || !['JHS', 'SHS', 'College'].includes(academicLevel)) {
+                return res.json({ toaRequired: true });
+            }
+        }
+
+        if (user) {
+            // Update the existing user with Google info if missing or outdated, safely
+            await pool.query(
+                `UPDATE users 
+                 SET google_sub = $1, 
+                     profile_picture = COALESCE(profile_picture, $2), 
+                     full_name = COALESCE(full_name, $3),
+                     academic_level = COALESCE(academic_level, $4),
+                     is_email_verified = TRUE
+                 WHERE id = $5`,
+                [sub, picture, name || user.full_name, academicLevel || user.academic_level, user.id]
+            );
+            // Fetch updated user
+            const updatedUserResult = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
+            user = updatedUserResult.rows[0];
+        } else {
+            // Create user automatically
+            const localPart = email.split('@')[0];
+            let parsedUaId = null;
+            if (/^\d{10}$/.test(localPart)) {
+                // Pre-check to make sure this UA ID is not already assigned
+                const checkUaId = await pool.query('SELECT id FROM users WHERE ua_id = $1', [localPart]);
+                if (checkUaId.rows.length === 0) {
+                    parsedUaId = localPart;
+                }
+            }
+
+            try {
+                const insertResult = await pool.query(
+                    `INSERT INTO users (ua_id, full_name, role, password_hash, academic_level, email, is_email_verified, google_sub, profile_picture)
+                     VALUES ($1, $2, 'student', NULL, $3, $4, TRUE, $5, $6)
+                     ON CONFLICT (email) DO UPDATE 
+                     SET google_sub = COALESCE(users.google_sub, EXCLUDED.google_sub),
+                         profile_picture = COALESCE(users.profile_picture, EXCLUDED.profile_picture),
+                         full_name = COALESCE(users.full_name, EXCLUDED.full_name),
+                         academic_level = COALESCE(users.academic_level, EXCLUDED.academic_level)
+                     RETURNING *`,
+                    [parsedUaId, name || 'Student', academicLevel || null, email, sub, picture]
+                );
+                user = insertResult.rows[0];
+            } catch (insertErr) {
+                console.warn("Google login insert conflict, retrying select:", insertErr.message);
+                const retryResult = await pool.query(
+                    'SELECT * FROM users WHERE google_sub = $1 OR LOWER(email) = $2',
+                    [sub, email]
+                );
+                user = retryResult.rows[0];
+                if (!user) {
+                    throw insertErr;
+                }
+            }
         }
 
         // Issue signed local JWT
@@ -185,79 +267,6 @@ const googleLogin = async (req, res) => {
     } catch (err) {
         console.error("Google authentication error:", err);
         res.status(401).json({ error: 'Invalid Google authentication token.' });
-    }
-};
-
-const googleOnboarding = async (req, res) => {
-    const { idToken, ua_id, academic_level } = req.body;
-    if (!idToken || !ua_id || !academic_level) {
-        return res.status(400).json({ error: 'ID token, Student ID, and academic level are required.' });
-    }
-
-    if (!isValidUaId(ua_id)) {
-        return res.status(400).json({ error: 'Invalid format. UA ID must be exactly 10 digits with no dashes.' });
-    }
-
-    const validLevels = ['JHS', 'SHS', 'College'];
-    if (!validLevels.includes(academic_level)) {
-        return res.status(400).json({ error: 'Academic level must be JHS, SHS, or College.' });
-    }
-
-    try {
-        let email, name;
-        if (idToken.startsWith("mock-google-token-payload-")) {
-            email = "test.student@ua.edu.ph";
-            name = "Test Student Mobile";
-        } else {
-            const ticket = await googleClient.verifyIdToken({
-                idToken,
-                audience: process.env.GOOGLE_CLIENT_ID
-            });
-            const payload = ticket.getPayload();
-            email = payload.email;
-            name = payload.name;
-        }
-
-        // Restrict to @ua.edu.ph
-        if (!email || !email.endsWith('@ua.edu.ph')) {
-            return res.status(403).json({ error: 'Access denied. You must use an official @ua.edu.ph email address.' });
-        }
-
-        // Ensure Student ID is unique
-        const checkId = await pool.query('SELECT * FROM users WHERE ua_id = $1', [ua_id]);
-        if (checkId.rows.length > 0) {
-            return res.status(400).json({ error: 'This Student ID is already registered.' });
-        }
-
-        // Ensure Email is unique (and not already taken by standard signup)
-        const checkEmail = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (checkEmail.rows.length > 0) {
-            return res.status(400).json({ error: 'This email is already registered.' });
-        }
-
-        // Create new user (passwordless OAuth user)
-        const result = await pool.query(
-            'INSERT INTO users (ua_id, full_name, role, password_hash, academic_level, email, is_email_verified) VALUES ($1, $2, \'student\', NULL, $3, $4, TRUE) RETURNING id, ua_id, full_name, role, academic_level, email',
-            [ua_id, name, academic_level, email]
-        );
-        const user = result.rows[0];
-
-        // Issue signed local JWT
-        const token = jwt.sign(
-            { id: user.id, ua_id: user.ua_id, role: user.role, full_name: user.full_name, academic_level: user.academic_level || null, email: user.email },
-            JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-
-        res.json({
-            message: 'Onboarding successful',
-            token,
-            user: { ua_id: user.ua_id, full_name: user.full_name, role: user.role, academic_level: user.academic_level || null }
-        });
-
-    } catch (err) {
-        console.error("Google onboarding error:", err);
-        res.status(401).json({ error: 'Google onboarding failed.' });
     }
 };
 
@@ -280,4 +289,4 @@ const requireAuth = (req, res, next) => {
     }
 };
 
-module.exports = { registerUser, loginUser, requireAuth, googleLogin, googleOnboarding };
+module.exports = { registerUser, loginUser, requireAuth, googleLogin };

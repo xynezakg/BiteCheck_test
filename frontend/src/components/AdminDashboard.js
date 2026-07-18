@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria, verifyAdminPassword, purgeAllFeedbacks } from "../api";
+import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria, verifyAdminPassword, purgeAllFeedbacks, updateUserAcademicLevel } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
@@ -38,10 +38,13 @@ export default function AdminDashboard({ navigate }) {
   // Ranking Filter
   const [rankingFilter, setRankingFilter] = useState("Overall");
 
+  // Safe Records Academic Level Filter
+  const [recordsLevelFilter, setRecordsLevelFilter] = useState("All");
+
   useEffect(() => {
     const token = localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token');
     const userStr = localStorage.getItem('ua_user') || sessionStorage.getItem('ua_user');
-    
+
     if (!token || !userStr) {
       window.location.href = '/';
       return;
@@ -71,7 +74,7 @@ export default function AdminDashboard({ navigate }) {
       localStorage.removeItem('ua_user');
       sessionStorage.removeItem('ua_token');
       sessionStorage.removeItem('ua_user');
-      
+
       showCustomModal(
         "Session Expired",
         "Your session has been closed due to 30 minutes of inactivity. Redirecting to login...",
@@ -80,7 +83,7 @@ export default function AdminDashboard({ navigate }) {
           window.location.href = '/admin';
         }
       );
-      
+
       setTimeout(() => {
         window.location.href = '/admin';
       }, 4000);
@@ -140,7 +143,7 @@ export default function AdminDashboard({ navigate }) {
   };
 
   useEffect(() => {
-    if (activeMenu === 'criteria') {
+    if (activeMenu === 'criteria' || activeMenu === 'rankings') {
       loadCriteria();
     }
   }, [activeMenu]);
@@ -185,6 +188,15 @@ export default function AdminDashboard({ navigate }) {
         }
       }
     );
+  };
+
+  const handleUpdateUserLevel = async (userId, level) => {
+    try {
+      await updateUserAcademicLevel(userId, level);
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, academic_level: level } : u));
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to update academic level.", "error");
+    }
   };
 
   const handleCreateCriteria = async (e) => {
@@ -340,9 +352,17 @@ export default function AdminDashboard({ navigate }) {
   const activeBreachCount = compromisedFeedbacks.length;
 
   let displayedFeedbacks = [];
-  if (activeMenu === 'dashboard' || activeMenu === 'records') displayedFeedbacks = safeFeedbacks;
-  else if (activeMenu === 'verify') displayedFeedbacks = feedbacks;
-  else if (activeMenu === 'quarantine') displayedFeedbacks = compromisedFeedbacks;
+  if (activeMenu === 'dashboard') {
+    displayedFeedbacks = safeFeedbacks;
+  } else if (activeMenu === 'records') {
+    displayedFeedbacks = recordsLevelFilter === "All"
+      ? safeFeedbacks
+      : safeFeedbacks.filter(f => f.student_academic_level === recordsLevelFilter);
+  } else if (activeMenu === 'verify') {
+    displayedFeedbacks = feedbacks;
+  } else if (activeMenu === 'quarantine') {
+    displayedFeedbacks = compromisedFeedbacks;
+  }
 
   const searchedFeedbacks = displayedFeedbacks.filter(f =>
     (f.customer_name || 'Anonymous').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -629,15 +649,22 @@ export default function AdminDashboard({ navigate }) {
         onClick={() => { setActiveMenu(id); setIsSidebarOpen(false); }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px',
-          background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent', borderRadius: '8px',
-          cursor: 'pointer', transition: 'all 0.2s', marginBottom: '8px', color: isActive ? colors.gold : colors.white,
-          border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent'
+          background: isActive ? 'rgba(229, 168, 35, 0.12)' : 'transparent', borderRadius: '8px',
+          cursor: 'pointer', transition: 'all 0.2s', marginBottom: '8px',
+          color: isActive ? colors.gold : colors.white,
+          borderLeft: 'none',
+          boxShadow: 'none',
         }}
-        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+        onMouseEnter={(e) => {
+          if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) e.currentTarget.style.background = 'transparent';
+        }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Icon size={20} /> <span style={{ fontWeight: isActive ? 600 : 400, fontSize: '15px' }}>{label}</span>
+          <Icon size={20} />
+          <span style={{ fontWeight: isActive ? 700 : 400, fontSize: '15px' }}>{label}</span>
         </div>
         {badge > 0 && (
           <span style={{ backgroundColor: colors.danger, color: colors.white, fontSize: '12px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' }}>{badge}</span>
@@ -698,7 +725,6 @@ export default function AdminDashboard({ navigate }) {
           padding: 40px 24px;
           display: flex;
           flex-direction: column;
-          border-right: 4px solid ${colors.gold};
           flex-shrink: 0;
           box-sizing: border-box;
           transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -769,7 +795,6 @@ export default function AdminDashboard({ navigate }) {
             transform: translateX(-100%);
             box-shadow: 8px 0 30px rgba(0,0,0,0.15);
             padding: 32px 24px;
-            border-right: 4px solid ${colors.gold};
           }
           .admin-sidebar.open {
             transform: translateX(0);
@@ -1060,10 +1085,10 @@ export default function AdminDashboard({ navigate }) {
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
                 <Search size={18} color={colors.textMuted} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search users by name, email, or Student ID..." 
-                  value={userSearchTerm} 
+                <input
+                  type="text"
+                  placeholder="Search users by name, email, or Student ID..."
+                  value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                   style={{
                     width: '100%', padding: '14px 16px 14px 48px', borderRadius: '12px',
@@ -1098,7 +1123,7 @@ export default function AdminDashboard({ navigate }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {usersList.filter(u => 
+                    {usersList.filter(u =>
                       (u.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                       (u.email || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                       (u.ua_id || '').toLowerCase().includes(userSearchTerm.toLowerCase())
@@ -1110,17 +1135,17 @@ export default function AdminDashboard({ navigate }) {
                         </td>
                       </tr>
                     ) : (
-                      usersList.filter(u => 
+                      usersList.filter(u =>
                         (u.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                         (u.email || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                         (u.ua_id || '').toLowerCase().includes(userSearchTerm.toLowerCase())
                       ).map(user => (
                         <tr key={user.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                          <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: 600 }}>{user.ua_id}</td>
+                          <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: 600 }}>{user.ua_id || 'Not provided'}</td>
                           <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.full_name}</td>
                           <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.email || 'N/A'}</td>
                           <td style={{ padding: '18px 24px', fontSize: '14px', textTransform: 'capitalize' }}>
-                            <span style={{ 
+                            <span style={{
                               padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600,
                               backgroundColor: user.role === 'admin' ? 'rgba(229, 168, 35, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                               color: user.role === 'admin' ? '#B88114' : '#2563EB'
@@ -1128,7 +1153,30 @@ export default function AdminDashboard({ navigate }) {
                               {user.role}
                             </span>
                           </td>
-                          <td style={{ padding: '18px 24px', fontSize: '14px' }}>{user.academic_level || 'N/A'}</td>
+                          <td style={{ padding: '12px 24px', fontSize: '14px' }}>
+                            <select
+                              value={user.academic_level || ''}
+                              onChange={(e) => {
+                                if (e.target.value) handleUpdateUserLevel(user.id, e.target.value);
+                              }}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: '6px',
+                                border: `1px solid ${user.academic_level ? colors.border : '#FBBF24'}`,
+                                backgroundColor: user.academic_level ? colors.white : '#FFFBEB',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                color: user.academic_level ? colors.navy : '#B45309',
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="">— Not set —</option>
+                              <option value="College">College</option>
+                              <option value="SHS">SHS</option>
+                              <option value="JHS">JHS</option>
+                            </select>
+                          </td>
                           <td style={{ padding: '18px 24px', fontSize: '14px' }}>
                             <span style={{
                               padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
@@ -1191,24 +1239,24 @@ export default function AdminDashboard({ navigate }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'flex-start' }}>
-              
+
               {/* Form Card */}
               <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: colors.navy, margin: '0 0 20px 0' }}>Add New Criterion</h3>
                 <form onSubmit={handleCreateCriteria} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '8px', letterSpacing: '0.05em' }}>CRITERION NAME</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Ambiance, Cleanliness" 
-                      value={newCriteriaName} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ambiance, Cleanliness"
+                      value={newCriteriaName}
                       onChange={(e) => setNewCriteriaName(e.target.value)}
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', color: colors.text, outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }} 
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', color: colors.text, outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
                     />
                   </div>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '12px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
@@ -1264,24 +1312,24 @@ export default function AdminDashboard({ navigate }) {
                               </button>
                             </td>
                             <td style={{ padding: '20px 32px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                               <button 
-                                 onClick={() => setEditingCriteria({ id: item.id, name: item.name })}
-                                 style={{ backgroundColor: 'transparent', border: 'none', color: colors.navy, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                 onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E2E8F0'}
-                                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                 title="Edit Criterion"
-                               >
-                                 <Edit size={16} />
-                               </button>
-                               <button 
-                                 onClick={() => handleDeleteCriteria(item.id, item.name)}
-                                 style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                 onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
-                                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                               >
-                                 <Trash2 size={16} />
-                               </button>
-                             </td>
+                              <button
+                                onClick={() => setEditingCriteria({ id: item.id, name: item.name })}
+                                style={{ backgroundColor: 'transparent', border: 'none', color: colors.navy, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E2E8F0'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                title="Edit Criterion"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCriteria(item.id, item.name)}
+                                style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1506,18 +1554,18 @@ export default function AdminDashboard({ navigate }) {
                 {['JHS', 'SHS', 'College'].map(level => {
                   const dataObj = demographics.find(d => (d.level || '').toUpperCase() === level.toUpperCase()) || { count: 0 };
                   const countVal = parseInt(dataObj.count) || 0;
-                  
+
                   // Calculate total registered
                   const totalRegistered = demographics.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0);
                   const percentage = totalRegistered > 0 ? ((countVal / totalRegistered) * 100).toFixed(1) : "0.0";
-                  
+
                   // Color codes for each level
                   const levelColors = {
                     JHS: { bg: '#EFF6FF', text: '#1E40AF', label: 'Junior High School' },
                     SHS: { bg: '#FDF2F8', text: '#9D174D', label: 'Senior High School' },
                     College: { bg: '#ECFDF5', text: '#065F46', label: 'College Level' }
                   };
-                  
+
                   const styleMeta = levelColors[level] || { bg: '#F1F5F9', text: '#334155', label: level };
 
                   return (
@@ -1546,7 +1594,7 @@ export default function AdminDashboard({ navigate }) {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 {userRole !== 'viewer' && feedbacks.length > 0 && (
-                  <button 
+                  <button
                     onClick={handlePurgeAll}
                     style={{ backgroundColor: colors.danger, color: colors.white, border: 'none', padding: '10px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#B91C1C'}
@@ -1555,6 +1603,30 @@ export default function AdminDashboard({ navigate }) {
                     <Trash2 size={14} /> Purge Records
                   </button>
                 )}
+                {/* Filter dropdown */}
+                <select
+                  value={recordsLevelFilter}
+                  onChange={(e) => { setRecordsLevelFilter(e.target.value); setCurrentPage(1); }}
+                  style={{
+                    height: '42px',
+                    padding: '0 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: colors.white,
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: colors.navy,
+                    outline: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                  }}
+                >
+                  <option value="All">All Academic Levels</option>
+                  <option value="College">College</option>
+                  <option value="SHS">SHS</option>
+                  <option value="JHS">JHS</option>
+                </select>
+
                 <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '0 16px', height: '42px', width: '320px', border: `1px solid ${colors.border}` }}>
                   <Search size={18} color={colors.textMuted} style={{ marginRight: '12px', flexShrink: 0 }} />
                   <input type="text" placeholder="Search verified records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: colors.text }} />
@@ -1587,7 +1659,12 @@ export default function AdminDashboard({ navigate }) {
                           <div style={{ color: colors.text, fontSize: '14px', fontWeight: 500 }}>{precisionDate.date}</div>
                           <div style={{ color: colors.textMuted, fontSize: '13px', marginTop: '2px' }}>{precisionDate.time}</div>
                         </td>
-                        <td style={{ padding: '20px 12px', color: colors.text, fontSize: '15px', fontWeight: 600 }}>{f.customer_name || 'Anonymous'}</td>
+                        <td style={{ padding: '20px 12px' }}>
+                          <div style={{ color: colors.text, fontSize: '15px', fontWeight: 600 }}>{f.customer_name || 'Anonymous'}</div>
+                          {f.student_academic_level && (
+                            <div style={{ color: colors.gold, fontSize: '11px', fontWeight: 700, marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.student_academic_level === 'JHS' ? 'JHS / High School' : f.student_academic_level}</div>
+                          )}
+                        </td>
 
                         <td style={{ padding: '20px 12px', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
                           {parsed.stall && <span style={{ color: colors.navy, fontWeight: 600, backgroundColor: '#F1F5F9', padding: '4px 10px', borderRadius: '6px', marginRight: '8px' }}>{parsed.stall}</span>}
@@ -1601,8 +1678,8 @@ export default function AdminDashboard({ navigate }) {
                             View Full
                           </button>
                           {userRole !== 'viewer' && (
-                            <button 
-                              onClick={() => handlePurgeRecord(f.id)} 
+                            <button
+                              onClick={() => handlePurgeRecord(f.id)}
                               style={{ backgroundColor: 'transparent', border: 'none', color: colors.danger, cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'background-color 0.15s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEE2E2'}
                               onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -2007,21 +2084,21 @@ export default function AdminDashboard({ navigate }) {
             <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: colors.navy, fontWeight: 700 }}>Edit Criterion</h3>
             <div style={{ marginBottom: '24px' }}>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '8px', letterSpacing: '0.05em' }}>CRITERION NAME</label>
-              <input 
-                type="text" 
-                value={editingCriteria.name} 
+              <input
+                type="text"
+                value={editingCriteria.name}
                 onChange={e => setEditingCriteria(prev => ({ ...prev, name: e.target.value }))}
                 style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', color: colors.text, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => setEditingCriteria(null)}
                 style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSaveCriteriaName}
                 style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
               >

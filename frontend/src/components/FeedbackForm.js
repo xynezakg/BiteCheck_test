@@ -508,7 +508,7 @@ export default function FeedbackForm({ navigate }) {
               <span className="desktop-only" style={{ color: '#A7F3D0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Authenticated as</span>
               <span className="mobile-only" style={{ color: '#A7F3D0', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Logged In</span>
               <span style={{ color: colors.gold, fontSize: '14px', fontWeight: 700 }}>
-                {user.full_name} <span className="desktop-only">({user.ua_id})</span>
+                {user.full_name} <span className="desktop-only">({user.ua_id || 'Not provided'})</span>
               </span>
             </div>
           </div>

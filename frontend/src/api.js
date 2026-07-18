@@ -19,18 +19,6 @@ export const loginUser = async (credentials) => {
     return response.json();
 };
 
-export const registerUser = async (userData) => {
-    const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Registration failed');
-    }
-    return response.json();
-};
 
 // --- SECURE FEEDBACK ---
 
@@ -297,24 +285,28 @@ export const deleteCriteria = async (id) => {
     return data;
 };
 
-export const loginWithGoogle = async (idToken) => {
+export const loginWithGoogle = async (idToken, acceptedToa = false, academicLevel = null) => {
     const response = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({ idToken, acceptedToa, academicLevel })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Google login failed');
     return data;
 };
 
-export const completeGoogleOnboarding = async ({ idToken, ua_id, academic_level }) => {
-    const response = await fetch(`${API_URL}/auth/google/onboarding`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, ua_id, academic_level })
+export const updateUserAcademicLevel = async (id, academicLevel) => {
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
+    const response = await fetch(`${API_URL}/admin/users/${id}/level`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ academicLevel })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Google onboarding failed');
+    if (!response.ok) throw new Error(data.error || 'Failed to update academic level');
     return data;
-};
+};

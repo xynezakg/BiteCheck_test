@@ -13,7 +13,7 @@ const {
     getFeedbacksByStallName, deleteFeedbacksByStallName
 } = require('./db');
 const { verifySignature } = require('./eddsa');
-const { registerUser, loginUser, requireAuth, googleLogin, googleOnboarding } = require('./auth');
+const { registerUser, loginUser, requireAuth, googleLogin } = require('./auth');
 const { generateStoreReport, analyzeFeedbackData } = require('./reportGenerator');
 const { sendEmail } = require('./email');
 const { sanitizeComment } = require('./utils/profanityFilter');
@@ -237,7 +237,6 @@ const getResetPasswordPage = (token, errorMsg = "") => {
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/auth/google', googleLogin);
-router.post('/auth/google/onboarding', googleOnboarding);
 
 // POST `/users/forgot-password`
 router.post('/users/forgot-password', async (req, res) => {
@@ -404,6 +403,32 @@ router.delete('/admin/users/:id', requireAuth, async (req, res) => {
     }
 });
 
+// --- ADMIN: UPDATE USER ACADEMIC LEVEL ---
+router.patch('/admin/users/:id/level', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+    const { id } = req.params;
+    const { academicLevel } = req.body;
+    const validLevels = ['JHS', 'SHS', 'College'];
+    if (!validLevels.includes(academicLevel)) {
+        return res.status(400).json({ error: "Invalid academic level. Must be JHS, SHS, or College." });
+    }
+    try {
+        const result = await pool.query(
+            'UPDATE users SET academic_level = $1 WHERE id = $2 RETURNING id, full_name, academic_level',
+            [academicLevel, id]
+        );
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.json({ message: "Academic level updated successfully", user: result.rows[0] });
+    } catch (err) {
+        console.error("Failed to update academic level:", err);
+        res.status(500).json({ error: "Internal server error updating academic level." });
+    }
+});
+
 // --- DYNAMIC EVALUATION CRITERIA ROUTES ---
 
 // GET `/criteria` -> returns active criteria names for student form
@@ -544,6 +569,8 @@ router.post('/feedback', requireAuth, async (req, res) => {
     rating = Number(rating);
     comment = comment ? String(comment).trim() : "";
     comment = sanitizeComment(comment);
+
+    console.log('[FEEDBACK DEBUG] rating:', rating, '| comment length:', comment.length, '| has_sig:', !!signature, '| has_key:', !!public_key);
 
     if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });
     if (!comment) return res.status(400).json({ error: 'Comment required' });

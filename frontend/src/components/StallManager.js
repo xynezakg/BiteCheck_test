@@ -187,25 +187,24 @@ export default function StallManager() {
   };
 
   return (
-    <div className="stall-manager-grid">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       {/* ─── RESPONSIVE LAYOUT STYLES ─── */}
       <style>{`
-        .stall-manager-grid {
+        .canteen-directory-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 32px;
+          gap: 24px;
           align-items: start;
         }
-
-        @media (max-width: 992px) {
-          .stall-manager-grid {
+        @media (max-width: 900px) {
+          .canteen-directory-grid {
             grid-template-columns: 1fr !important;
-            gap: 24px !important;
           }
         }
+        .stall-row:hover { background-color: #F8FAFC !important; }
       `}</style>
 
-      {/* ─── LEFT COLUMN: FORM ─── */}
+      {/* ─── TOP: FULL-WIDTH STALL CONFIGURATOR ─── */}
       <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: `1px solid ${colors.border}`, paddingBottom: '20px' }}>
           <div style={{ backgroundColor: 'rgba(12, 35, 64, 0.05)', padding: '12px', borderRadius: '12px' }}>
@@ -234,7 +233,7 @@ export default function StallManager() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', alignItems: 'start' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Stall Name <span style={{ color: colors.red }}>*</span></label>
               <input
@@ -264,15 +263,14 @@ export default function StallManager() {
                 onChange={(e) => setNewCanteenGroup(e.target.value)}
                 style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', backgroundColor: '#FFFFFF', boxSizing: 'border-box', fontFamily: 'inherit' }}
               >
-                <option value="SHS">SHS</option>
                 <option value="College">College</option>
+                <option value="SHS">High School (SHS / JHS)</option>
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Cover Photo </label>
+            <div style={{ gridColumn: '1 / 3' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Cover Photo</label>
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
-
               {!newImage ? (
                 <div
                   onClick={() => fileInputRef.current.click()}
@@ -294,113 +292,118 @@ export default function StallManager() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={!newName.trim()}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: newName.trim() ? (editingStallId ? colors.blue : colors.navy) : '#94A3B8', color: colors.white, border: 'none', padding: '16px', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', marginTop: '8px' }}
-            >
-              {editingStallId ? <><Save size={18} /> Update Stall</> : <><Plus size={18} /> Add Stall to Database</>}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button
+                type="submit"
+                disabled={!newName.trim()}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: newName.trim() ? (editingStallId ? colors.blue : colors.navy) : '#94A3B8', color: colors.white, border: 'none', padding: '14px 20px', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', width: '100%' }}
+              >
+                {editingStallId ? <><Save size={18} /> Update Stall</> : <><Plus size={18} /> Add Stall</>}
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
-      {/* ─── RIGHT COLUMN: ACTIVE STALLS ─── */}
-      <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.navy, letterSpacing: '0.05em', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}`, paddingBottom: '16px' }}>
-          ACTIVE STALLS DIRECTORY
-          <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', color: colors.blue }}>{stalls.length} Total</span>
-        </h3>
+      {/* ─── BOTTOM: TWO-COLUMN CANTEEN DIRECTORIES ─── */}
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.textMuted, fontSize: '14px', padding: '32px', justifyContent: 'center', backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading stalls...
+        </div>
+      ) : (
+        <div className="canteen-directory-grid">
 
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.textMuted, fontSize: '14px', padding: '24px 0', justifyContent: 'center' }}>
-            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading...
-          </div>
-        ) : stalls.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', backgroundColor: colors.bg, borderRadius: '12px', border: `1px dashed ${colors.border}`, color: colors.textMuted, fontSize: '14px' }}>
-            <Store size={32} color="#CBD5E1" style={{ margin: '0 auto 12px auto', display: 'block' }} />
-            No stalls found. Add one above!
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {stalls.map(stall => (
-              <div key={stall.id} style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: `1px solid ${colors.border}`, backgroundColor: editingStallId === stall.id ? '#F8FAFC' : 'transparent', gap: '16px', transition: 'background-color 0.2s' }} onMouseEnter={e => { if (editingStallId !== stall.id) e.currentTarget.style.backgroundColor = '#F8FAFC'; }} onMouseLeave={e => { if (editingStallId !== stall.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '8px', backgroundColor: colors.bg, overflow: 'hidden', flexShrink: 0 }}>
-                  {stall.image ? (
-                    <img
-                      src={stall.image}
-                      alt={stall.name}
-                      crossOrigin="anonymous"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Store size={20} color="#94A3B8" />
-                    </div>
-                  )}
+          {/* ── COLLEGE CANTEEN ── */}
+          <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ backgroundColor: 'rgba(12,35,64,0.05)', padding: '8px', borderRadius: '8px' }}>
+                  <Store size={18} color={colors.navy} />
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: 600, color: colors.text, fontSize: '15px' }}>{stall.name}</span>
-                    {stall.canteen_group && (
-                      <span style={{ 
-                        fontSize: '10px', 
-                        fontWeight: 700, 
-                        color: stall.canteen_group === 'College' ? '#3B82F6' : '#EF4444', 
-                        backgroundColor: stall.canteen_group === 'College' ? '#EFF6FF' : '#FEF2F2',
-                        padding: '2px 6px', 
-                        borderRadius: '4px',
-                        border: `1px solid ${stall.canteen_group === 'College' ? '#BFDBFE' : '#FCA5A5'}`
-                      }}>
-                        {stall.canteen_group === 'College' ? 'College Canteen' : 'High School Canteen'}
-                      </span>
-                    )}
-                  </div>
-                  {stall.email && (
-                    <span style={{ fontSize: '12px', color: stall.is_email_verified ? colors.blue : colors.textMuted, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                      <Mail size={12} /> {stall.email} {stall.is_email_verified ? '(Verified)' : '(Unverified)'}
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {stall.is_email_verified && (
-                    <button
-                      onClick={() => handleSendReport(stall.id)}
-                      style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669', cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}
-                      title="Send AI Report via Email"
-                    >
-                      <Send size={16} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDownloadQR(stall.name)}
-                    style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', color: '#9333EA', cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}
-                    title="Download Auto-Routing QR Code"
-                  >
-                    <QrCode size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleEditClick(stall)}
-                    style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: colors.blue, cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}
-                    title="Edit Stall"
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(stall.id)}
-                    style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: colors.red, cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}
-                    title="Remove Stall"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: colors.navy }}>College Canteen</h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted }}>Food stalls for college students</p>
                 </div>
               </div>
-            ))}
+              <span style={{ backgroundColor: colors.bg, color: colors.textMuted, fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', border: `1px solid ${colors.border}` }}>
+                {stalls.filter(s => s.canteen_group === 'College').length} stalls
+              </span>
+            </div>
+
+            <div style={{ padding: '8px 16px 16px' }}>
+              {stalls.filter(s => s.canteen_group === 'College').length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: colors.textMuted, fontSize: '14px' }}>
+                  <Store size={28} color="#CBD5E1" style={{ margin: '0 auto 8px', display: 'block' }} />
+                  No college canteen stalls yet.
+                </div>
+              ) : stalls.filter(s => s.canteen_group === 'College').map(stall => (
+                <div key={stall.id} className="stall-row" style={{ display: 'flex', alignItems: 'center', padding: '12px 8px', borderBottom: `1px solid ${colors.border}`, gap: '12px', transition: 'background-color 0.15s', backgroundColor: editingStallId === stall.id ? colors.bg : 'transparent', borderRadius: '8px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: colors.bg, overflow: 'hidden', flexShrink: 0, border: `1px solid ${colors.border}` }}>
+                    {stall.image ? <img src={stall.image} alt={stall.name} crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Store size={16} color="#94A3B8" /></div>}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: colors.text, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stall.name}</div>
+                    {stall.email && <div style={{ fontSize: '11px', color: stall.is_email_verified ? '#16A34A' : '#DC2626', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '1px' }}><Mail size={10} /> {stall.email} {stall.is_email_verified ? '(Verified)' : '(Unverified)'}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    {stall.is_email_verified && <button onClick={() => handleSendReport(stall.id)} style={{ background: '#ECFDF5', border: '1px solid #BBF7D0', color: '#15803D', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Send AI Report"><Send size={14} /></button>}
+                    <button onClick={() => handleDownloadQR(stall.name)} style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', color: '#7C3AED', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Download QR"><QrCode size={14} /></button>
+                    <button onClick={() => handleEditClick(stall)} style={{ background: 'rgba(12,35,64,0.05)', border: '1px solid rgba(12,35,64,0.15)', color: colors.navy, cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Edit"><Edit3 size={14} /></button>
+                    <button onClick={() => handleDelete(stall.id)} style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Delete"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* ── HIGH SCHOOL CANTEEN ── */}
+          <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ backgroundColor: 'rgba(12,35,64,0.05)', padding: '8px', borderRadius: '8px' }}>
+                  <Store size={18} color={colors.navy} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: colors.navy }}>High School Canteen</h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted }}>Food stalls for SHS &amp; JHS students</p>
+                </div>
+              </div>
+              <span style={{ backgroundColor: colors.bg, color: colors.textMuted, fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', border: `1px solid ${colors.border}` }}>
+                {stalls.filter(s => s.canteen_group === 'SHS' || s.canteen_group === 'High School').length} stalls
+              </span>
+            </div>
+
+            <div style={{ padding: '8px 16px 16px' }}>
+              {stalls.filter(s => s.canteen_group === 'SHS' || s.canteen_group === 'High School').length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: colors.textMuted, fontSize: '14px' }}>
+                  <Store size={28} color="#CBD5E1" style={{ margin: '0 auto 8px', display: 'block' }} />
+                  No high school canteen stalls yet.
+                </div>
+              ) : stalls.filter(s => s.canteen_group === 'SHS' || s.canteen_group === 'High School').map(stall => (
+                <div key={stall.id} className="stall-row" style={{ display: 'flex', alignItems: 'center', padding: '12px 8px', borderBottom: `1px solid ${colors.border}`, gap: '12px', transition: 'background-color 0.15s', backgroundColor: editingStallId === stall.id ? colors.bg : 'transparent', borderRadius: '8px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: colors.bg, overflow: 'hidden', flexShrink: 0, border: `1px solid ${colors.border}` }}>
+                    {stall.image ? <img src={stall.image} alt={stall.name} crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Store size={16} color="#94A3B8" /></div>}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: colors.text, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stall.name}</div>
+                    {stall.email && <div style={{ fontSize: '11px', color: stall.is_email_verified ? '#16A34A' : '#DC2626', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '1px' }}><Mail size={10} /> {stall.email} {stall.is_email_verified ? '(Verified)' : '(Unverified)'}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    {stall.is_email_verified && <button onClick={() => handleSendReport(stall.id)} style={{ background: '#ECFDF5', border: '1px solid #BBF7D0', color: '#15803D', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Send AI Report"><Send size={14} /></button>}
+                    <button onClick={() => handleDownloadQR(stall.name)} style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', color: '#7C3AED', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Download QR"><QrCode size={14} /></button>
+                    <button onClick={() => handleEditClick(stall)} style={{ background: 'rgba(12,35,64,0.05)', border: '1px solid rgba(12,35,64,0.15)', color: colors.navy, cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Edit"><Edit3 size={14} /></button>
+                    <button onClick={() => handleDelete(stall.id)} style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }} title="Delete"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+
+
 
       {/* ─── CUSTOM MODAL ─── */}
       {modalState.isOpen && (

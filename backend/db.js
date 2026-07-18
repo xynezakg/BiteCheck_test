@@ -7,6 +7,10 @@ const bcrypt = require('bcrypt');
 const isExternal = process.env.PGHOST && process.env.PGHOST.includes('render.com');
 const connectionString = process.env.DATABASE_URL;
 
+if (!connectionString && !process.env.PGPASSWORD && !process.env.PGHOST) {
+    console.warn("⚠️  Database Connection Warning: Neither DATABASE_URL nor PGPASSWORD is set in environment variables. Please check your backend/.env configuration.");
+}
+
 const pool = new Pool(
     connectionString
         ? {
@@ -16,9 +20,9 @@ const pool = new Pool(
         : {
               host: process.env.PGHOST || 'localhost',
               port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
-              user: process.env.PGUSER,
-              password: process.env.PGPASSWORD,
-              database: process.env.PGDATABASE,
+              user: process.env.PGUSER || '',
+              password: process.env.PGPASSWORD || '',
+              database: process.env.PGDATABASE || '',
               ssl: isExternal ? { rejectUnauthorized: false } : false
           }
 );
@@ -28,10 +32,10 @@ async function initDB() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                ua_id VARCHAR(50) UNIQUE NOT NULL, 
+                ua_id VARCHAR(50) UNIQUE, 
                 full_name VARCHAR(100) NOT NULL,
                 role VARCHAR(20) NOT NULL DEFAULT 'student', 
-                password_hash VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
@@ -73,7 +77,11 @@ async function initDB() {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN ua_id DROP NOT NULL;`);
         await pool.query(`ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255);`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT;`);
+        await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique ON users (google_sub) WHERE google_sub IS NOT NULL;`);
 
         // Canteen group column for stalls (highschool | college | null = general)
         await pool.query(`ALTER TABLE stalls ADD COLUMN IF NOT EXISTS canteen_group VARCHAR(20);`);
@@ -137,7 +145,7 @@ const addFeedback = async ({ user_id, customer_name, rating, comment, signature,
 
 async function getAllFeedback() {
     const result = await pool.query(`
-        SELECT f.*, u.full_name as student_real_name, u.ua_id as student_ua_id
+        SELECT f.*, u.full_name as student_real_name, u.ua_id as student_ua_id, u.academic_level as student_academic_level
         FROM feedbacks f
         LEFT JOIN users u ON f.user_id = u.id
         ORDER BY f.created_at DESC
