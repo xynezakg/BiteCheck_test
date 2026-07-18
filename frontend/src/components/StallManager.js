@@ -12,6 +12,7 @@ export default function StallManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
   // Custom Modal State
   const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "", type: "success" });
@@ -90,6 +91,7 @@ export default function StallManager() {
       }
 
       handleCancelEdit();
+      setIsFormModalOpen(false);
       setError("");
 
       const actionText = isEditing ? "updated" : "added";
@@ -109,7 +111,7 @@ export default function StallManager() {
     setNewImage(stall.image || null);
     setNewEmail(stall.email || "");
     setNewCanteenGroup(stall.canteen_group || "College");
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to the form
+    setIsFormModalOpen(true);
   };
 
   const handleCancelEdit = () => {
@@ -118,6 +120,7 @@ export default function StallManager() {
     setNewImage(null);
     setNewEmail("");
     setNewCanteenGroup("College");
+    setIsFormModalOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -204,106 +207,148 @@ export default function StallManager() {
         .stall-row:hover { background-color: #F8FAFC !important; }
       `}</style>
 
-      {/* ─── TOP: FULL-WIDTH STALL CONFIGURATOR ─── */}
-      <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: `1px solid ${colors.border}`, paddingBottom: '20px' }}>
-          <div style={{ backgroundColor: 'rgba(12, 35, 64, 0.05)', padding: '12px', borderRadius: '12px' }}>
-            <Store size={28} color={colors.navy} />
+      {/* ─── TOP: PAGE HEADER ─── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.white, borderRadius: '16px', padding: '24px 32px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ backgroundColor: 'rgba(12, 35, 64, 0.05)', padding: '12px', borderRadius: '12px', color: colors.navy }}>
+            <Store size={28} />
           </div>
           <div>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', color: colors.navy, fontWeight: 800, letterSpacing: '-0.02em' }}>Stall Configurator</h2>
-            <p style={{ margin: 0, fontSize: '14px', color: colors.textMuted }}>Add or edit individual food stalls.</p>
+            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', color: colors.navy, fontWeight: 800, letterSpacing: '-0.02em' }}>Manage Canteen Stalls</h2>
+            <p style={{ margin: 0, fontSize: '13.5px', color: colors.textMuted }}>Create, edit, and audit food stalls inside the canteens.</p>
           </div>
         </div>
+        <button 
+          onClick={() => { handleCancelEdit(); setIsFormModalOpen(true); }}
+          style={{ backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '12px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(12,35,64,0.1)' }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#17365C'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = colors.navy}
+        >
+          <Plus size={18} /> Add New Stall
+        </button>
+      </div>
 
-        {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FEF2F2', color: colors.red, padding: '16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px', fontWeight: 500, border: '1px solid #FECACA' }}>
-            <AlertCircle size={18} /> {error}
-          </div>
-        )}
-
-        {/* Form Context */}
-        <div style={{ backgroundColor: editingStallId ? '#F0F9FF' : colors.bg, padding: '24px', borderRadius: '12px', border: `1px solid ${editingStallId ? '#BAE6FD' : colors.border}`, transition: 'all 0.3s' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, color: editingStallId ? colors.blue : colors.textMuted, letterSpacing: '0.05em', margin: 0 }}>
-              {editingStallId ? 'EDITING STALL' : 'ADD NEW STALL'}
-            </h3>
-            {editingStallId && (
-              <button onClick={handleCancelEdit} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Cancel Edit</button>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', alignItems: 'start' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Stall Name <span style={{ color: colors.red }}>*</span></label>
-              <input
-                type="text"
-                placeholder="e.g., Dad Bobs..."
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Stall Owner Email <span style={{ color: colors.red }}>*</span> <Mail size={14} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '4px' }} /></label>
-              <input
-                type="email"
-                placeholder="owner@example.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Canteen Group <span style={{ color: colors.red }}>*</span></label>
-              <select
-                value={newCanteenGroup}
-                onChange={(e) => setNewCanteenGroup(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '15px', outline: 'none', backgroundColor: '#FFFFFF', boxSizing: 'border-box', fontFamily: 'inherit' }}
+      {/* ─── FORM MODAL POPUP ─── */}
+      {isFormModalOpen && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          backgroundColor: 'rgba(12, 35, 64, 0.65)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: colors.white, borderRadius: '16px',
+            width: '100%', maxWidth: '520px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflow: 'hidden', border: `1px solid ${colors.border}`,
+            animation: 'fadeUp 0.3s ease'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px', borderBottom: `1px solid ${colors.border}`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              backgroundColor: colors.bg
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: colors.navy }}>
+                {editingStallId ? 'Edit Canteen Stall' : 'Create New Canteen Stall'}
+              </h3>
+              <button 
+                onClick={handleCancelEdit} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.textMuted, display: 'flex', alignItems: 'center' }}
               >
-                <option value="College">College</option>
-                <option value="SHS">High School (SHS / JHS)</option>
-              </select>
-            </div>
-
-            <div style={{ gridColumn: '1 / 3' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: colors.navy, marginBottom: '8px' }}>Cover Photo</label>
-              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
-              {!newImage ? (
-                <div
-                  onClick={() => fileInputRef.current.click()}
-                  style={{ width: '100%', padding: '20px', border: `2px dashed ${colors.border}`, borderRadius: '8px', backgroundColor: colors.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', boxSizing: 'border-box' }}
-                >
-                  <div style={{ backgroundColor: colors.bg, padding: '8px', borderRadius: '50%' }}><ImageIcon size={20} color={colors.textMuted} /></div>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '14px', color: colors.text, fontWeight: 500 }}>Click to upload cover photo</span>
-                    <span style={{ fontSize: '12px', color: colors.textMuted }}>Recommended ratio 16:9 (JPG/PNG)</span>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${colors.border}` }}>
-                  <img src={newImage} alt="Stall Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => { setNewImage(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button
-                type="submit"
-                disabled={!newName.trim()}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: newName.trim() ? (editingStallId ? colors.blue : colors.navy) : '#94A3B8', color: colors.white, border: 'none', padding: '14px 20px', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', width: '100%' }}
-              >
-                {editingStallId ? <><Save size={18} /> Update Stall</> : <><Plus size={18} /> Add Stall</>}
+                <X size={20} />
               </button>
             </div>
-          </form>
+
+            {/* Modal Form Content */}
+            <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
+              {error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FEF2F2', color: colors.red, padding: '12px 16px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 500, border: '1px solid #FECACA' }}>
+                  <AlertCircle size={16} /> {error}
+                </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', letterSpacing: '0.03em' }}>STALL NAME <span style={{ color: colors.red }}>*</span></label>
+                <input
+                  required
+                  type="text"
+                  placeholder="e.g., Dad Bobs Canteen..."
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: `1.5px solid ${colors.border}`, fontSize: '14.5px', color: colors.text, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', letterSpacing: '0.03em' }}>STALL OWNER EMAIL <span style={{ color: colors.red }}>*</span></label>
+                <input
+                  required
+                  type="email"
+                  placeholder="owner@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: `1.5px solid ${colors.border}`, fontSize: '14.5px', color: colors.text, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', letterSpacing: '0.03em' }}>CANTEEN GROUP <span style={{ color: colors.red }}>*</span></label>
+                <select
+                  value={newCanteenGroup}
+                  onChange={(e) => setNewCanteenGroup(e.target.value)}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: `1.5px solid ${colors.border}`, fontSize: '14.5px', color: colors.text, outline: 'none', backgroundColor: '#FFFFFF', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                >
+                  <option value="College">College Canteen</option>
+                  <option value="SHS">High School Canteen (SHS / JHS)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted, marginBottom: '6px', letterSpacing: '0.03em' }}>COVER PHOTO</label>
+                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
+                {!newImage ? (
+                  <div
+                    onClick={() => fileInputRef.current.click()}
+                    style={{ width: '100%', padding: '24px', border: `2px dashed ${colors.border}`, borderRadius: '8px', backgroundColor: colors.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', boxSizing: 'border-box' }}
+                  >
+                    <div style={{ backgroundColor: colors.white, padding: '8px', borderRadius: '50%', border: `1px solid ${colors.border}` }}><ImageIcon size={20} color={colors.textMuted} /></div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '14px', color: colors.text, fontWeight: 600 }}>Click to upload cover photo</span>
+                      <span style={{ fontSize: '11.5px', color: colors.textMuted }}>Recommended ratio 16:9 (JPG/PNG)</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${colors.border}` }}>
+                    <img src={newImage} alt="Stall Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button type="button" onClick={() => { setNewImage(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: `1px solid ${colors.border}`, paddingTop: '20px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  style={{ backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newName.trim() || !newEmail.trim()}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: (newName.trim() && newEmail.trim()) ? (editingStallId ? colors.blue : colors.navy) : '#CBD5E1', color: colors.white, border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: (newName.trim() && newEmail.trim()) ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                >
+                  {editingStallId ? <><Save size={16} /> Save Changes</> : <><Plus size={16} /> Create Stall</>}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── BOTTOM: TWO-COLUMN CANTEEN DIRECTORIES ─── */}
       {loading ? (
