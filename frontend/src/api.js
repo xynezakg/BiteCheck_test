@@ -104,6 +104,17 @@ export const getAdminFeedbacks = async () => {
     const response = await fetch(`${API_URL}/admin/feedbacks`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('ua_token');
+            localStorage.removeItem('ua_user');
+            sessionStorage.removeItem('ua_token');
+            sessionStorage.removeItem('ua_user');
+            window.location.href = '/';
+        }
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to fetch admin feedbacks');
+    }
     return response.json();
 };
 
