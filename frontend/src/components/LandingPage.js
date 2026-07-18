@@ -2071,8 +2071,22 @@ export default function LandingPage({ navigate }) {
 
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.08)', marginBottom: '30px' }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontSize: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '12px' }}>
             <span>© 2026 University of the Assumption. All Rights Reserved.</span>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-300)', flexWrap: 'wrap' }}>
+              <span>Developed by: <strong>Team Yuno</strong> (Bolus, Manalese, Quiambao)</span>
+              <a href="https://ua-cit.com" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <img 
+                  src="/team_yuno_logo.png" 
+                  alt="Team Yuno Logo" 
+                  style={{ height: '22px', width: 'auto', borderRadius: '4px', cursor: 'pointer', transition: 'transform 0.2s' }} 
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                />
+              </a>
+            </div>
+
             <span style={{ color: 'var(--gray-300)', display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button 
                 onClick={() => setShowPrivacyModal(true)} 
