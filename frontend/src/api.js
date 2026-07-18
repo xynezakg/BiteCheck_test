@@ -320,4 +320,46 @@ export const updateUserAcademicLevel = async (id, academicLevel) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to update academic level');
     return data;
+};
+
+export const fetchSettings = async () => {
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
+    const response = await fetch(`${API_URL}/admin/settings`, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch settings');
+    return response.json();
+};
+
+export const updateSettings = async (reports_auto_send, reports_schedule) => {
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
+    const response = await fetch(`${API_URL}/admin/settings`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ reports_auto_send, reports_schedule })
+    });
+    if (!response.ok) throw new Error('Failed to update settings');
+    return response.json();
+};
+
+export const fetchReportLogs = async () => {
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
+    const response = await fetch(`${API_URL}/admin/reports/logs`, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch report logs');
+    return response.json();
+};
+
+export const triggerManualCronReports = async () => {
+    const token = (localStorage.getItem('ua_token') || sessionStorage.getItem('ua_token'));
+    const response = await fetch(`${API_URL}/admin/cron/process-reports`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+    });
+    if (!response.ok) throw new Error('Failed to trigger manual reports cron job');
+    return response.json();
 };

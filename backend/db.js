@@ -124,7 +124,39 @@ async function initDB() {
             `);
         }
 
-        console.log("✅ Database initialized: 'users', 'feedbacks', 'stalls', and 'criteria' tables are ready.");
+        // Initialize automated AI reports scheduler and PDF auto-expiry tables
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key VARCHAR(50) PRIMARY KEY,
+                value VARCHAR(255) NOT NULL
+            );
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS sent_reports (
+                id SERIAL PRIMARY KEY,
+                stall_id INT NOT NULL,
+                cloudinary_public_id VARCHAR(255) NOT NULL,
+                pdf_url TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                expires_at TIMESTAMP NOT NULL,
+                is_deleted BOOLEAN DEFAULT FALSE
+            );
+        `);
+
+        await pool.query(`
+            INSERT INTO system_settings (key, value)
+            VALUES ('reports_auto_send', 'false')
+            ON CONFLICT (key) DO NOTHING;
+        `);
+
+        await pool.query(`
+            INSERT INTO system_settings (key, value)
+            VALUES ('reports_schedule', 'weekly')
+            ON CONFLICT (key) DO NOTHING;
+        `);
+
+        console.log("✅ Database initialized: 'users', 'feedbacks', 'stalls', 'criteria', 'system_settings', and 'sent_reports' tables are ready.");
 
     } catch (err) {
         console.error("❌ Failed to create table:", err.message);

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import StallManager from './StallManager';
-import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria, verifyAdminPassword, purgeAllFeedbacks, updateUserAcademicLevel } from "../api";
+import { getAdminFeedbacks, verifyFeedback, deleteFeedback, quarantineFeedback, getFeedbackPhoto, fetchStalls, getUserDemographics, fetchUsers, deleteUser, fetchAllCriteria, createCriteria, updateCriteria, deleteCriteria, verifyAdminPassword, purgeAllFeedbacks, updateUserAcademicLevel, fetchSettings, updateSettings, fetchReportLogs, triggerManualCronReports } from "../api";
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip,
   LineChart, Line
 } from 'recharts';
-import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users, Edit } from 'lucide-react';
+import { Camera, LayoutDashboard, FileText, LogOut, ShieldCheck, X, Star, Key, Hash, ShieldAlert, Search, Download, AlertTriangle, Clock, Terminal, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Trophy, Medal, Award, Users, Edit, Settings } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -26,6 +26,12 @@ export default function AdminDashboard({ navigate }) {
   const [traceStatus, setTraceStatus] = useState('loading');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // AI report scheduler and expiry logs states
+  const [settings, setSettings] = useState({ reports_auto_send: 'false', reports_schedule: 'weekly' });
+  const [reportLogs, setReportLogs] = useState([]);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTriggeringCron, setIsTriggeringCron] = useState(false);
 
   // Custom Modal State for Confirmations & Alerts
   const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "", type: "confirm", onConfirm: null });
@@ -295,6 +301,67 @@ export default function AdminDashboard({ navigate }) {
   const isAuditingRef = useRef(isAuditing);
   useEffect(() => { isAuditingRef.current = isAuditing; }, [isAuditing]);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, activeMenu]);
+
+  // AI report scheduler and expiry logs effects & handlers
+  useEffect(() => {
+    if (activeMenu === 'settings') {
+      loadSettingsAndLogs();
+    }
+  }, [activeMenu]);
+
+  const loadSettingsAndLogs = async () => {
+    try {
+      const settingsData = await fetchSettings();
+      setSettings(settingsData);
+      
+      const logsData = await fetchReportLogs();
+      setReportLogs(logsData);
+    } catch (err) {
+      console.error("Failed to load settings or logs:", err);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      await updateSettings(settings.reports_auto_send, settings.reports_schedule);
+      showCustomModal("Success", "Scheduler settings saved successfully!", "info");
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to save settings.", "info");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleTriggerReports = async () => {
+    setIsTriggeringCron(true);
+    try {
+      const res = await triggerManualCronReports();
+      showCustomModal("Success", res.message || "AI Reports dispatch triggered successfully!", "info");
+      const logsData = await fetchReportLogs();
+      setReportLogs(logsData);
+    } catch (err) {
+      showCustomModal("Error", err.message || "Failed to trigger AI reports.", "info");
+    } finally {
+      setIsTriggeringCron(false);
+    }
+  };
+
+  const getRemainingTime = (expiresAtStr, isDeleted) => {
+    if (isDeleted) return "Purged from Cloud";
+    const expiresAt = new Date(expiresAtStr);
+    const now = new Date();
+    const diffMs = expiresAt - now;
+    if (diffMs <= 0) return "Expired (Pending Purge)";
+    
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (diffDays > 0) {
+      return `${diffDays}d ${diffHours}h remaining`;
+    }
+    return `${diffHours}h remaining`;
+  };
 
   useEffect(() => {
     const fetchAndAudit = async () => {
@@ -922,6 +989,7 @@ export default function AdminDashboard({ navigate }) {
               <MenuItem id="stalls" icon={Store} label="Manage Stalls" />
               <MenuItem id="users" icon={Users} label="User Management" />
               <MenuItem id="criteria" icon={Star} label="Manage Criteria" />
+              <MenuItem id="settings" icon={Settings} label="Report Scheduler" />
             </>
           )}
 
@@ -1898,6 +1966,183 @@ export default function AdminDashboard({ navigate }) {
             <div style={{ padding: '0 40px 24px' }}>
               <PaginationControls />
             </div>
+          </div>
+        )}
+
+        {/* ---------------- VIEW 5: REPORT SCHEDULER & SETTINGS ---------------- */}
+        {activeMenu === "settings" && (
+          <div style={{ animation: 'fadeUp 0.4s ease', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* Header */}
+            <div style={{ backgroundColor: colors.white, borderRadius: '16px', padding: '32px 40px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ backgroundColor: 'rgba(12, 35, 64, 0.05)', padding: '12px', borderRadius: '12px', color: colors.navy }}>
+                  <Settings size={32} />
+                </div>
+                <div>
+                  <h1 style={{ fontSize: '24px', fontWeight: 800, color: colors.navy, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>Report Scheduler Settings</h1>
+                  <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>Configure automated AI evaluation reports dispatch and Cloudinary file retention policies.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Config & Action Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px', alignItems: 'start' }}>
+              
+              {/* Configuration Panel */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '32px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 700, color: colors.navy, borderBottom: `1px solid ${colors.border}`, paddingBottom: '12px' }}>Scheduler Configuration</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                  {/* Auto vs Manual Toggle */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '15.5px', color: colors.text }}>Automated Report Dispatch</div>
+                      <div style={{ fontSize: '13px', color: colors.textMuted, marginTop: '2px' }}>Automatically compile and email AI reports to all verified stall owners.</div>
+                    </div>
+                    <div style={{ display: 'flex', border: `1.5px solid ${colors.border}`, borderRadius: '30px', padding: '3px', backgroundColor: colors.bg }}>
+                      <button 
+                        onClick={() => setSettings(prev => ({ ...prev, reports_auto_send: 'true' }))}
+                        style={{
+                          border: 'none', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                          backgroundColor: settings.reports_auto_send === 'true' ? colors.navy : 'transparent',
+                          color: settings.reports_auto_send === 'true' ? colors.white : colors.textMuted
+                        }}
+                      >
+                        Auto-Send
+                      </button>
+                      <button 
+                        onClick={() => setSettings(prev => ({ ...prev, reports_auto_send: 'false' }))}
+                        style={{
+                          border: 'none', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                          backgroundColor: settings.reports_auto_send === 'false' ? colors.navy : 'transparent',
+                          color: settings.reports_auto_send === 'false' ? colors.white : colors.textMuted
+                        }}
+                      >
+                        Manual-Only
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Send Frequency */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '15.5px', color: colors.text }}>Dispatch Schedule Frequency</div>
+                      <div style={{ fontSize: '13px', color: colors.textMuted, marginTop: '2px' }}>Set interval for report processing (Hobby Plan maximum frequency is once daily).</div>
+                    </div>
+                    <select
+                      value={settings.reports_schedule}
+                      onChange={(e) => setSettings(prev => ({ ...prev, reports_schedule: e.target.value }))}
+                      style={{
+                        padding: '10px 14px', borderRadius: '8px', border: `1.5px solid ${colors.border}`, fontSize: '14.5px', color: colors.text, outline: 'none', backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit'
+                      }}
+                    >
+                      <option value="daily">Daily at 8:00 AM</option>
+                      <option value="weekly">Weekly (Every Monday at 8:00 AM)</option>
+                      <option value="monthly">Monthly (1st of the Month at 8:00 AM)</option>
+                    </select>
+                  </div>
+
+                  {/* Save Button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: `1px solid ${colors.border}`, paddingTop: '20px', marginTop: '8px' }}>
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      style={{
+                        backgroundColor: colors.navy, color: colors.white, border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
+                      }}
+                    >
+                      {isSavingSettings ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : 'Save Settings'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual Control Panel */}
+              <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '32px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 700, color: colors.navy, borderBottom: `1px solid ${colors.border}`, paddingBottom: '12px' }}>Manual Overrides</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ fontSize: '13.5px', color: colors.textMuted, lineHeight: 1.6 }}>
+                    Force compile and email out AI reports to all verified stall owners immediately.
+                  </div>
+                  <button
+                    onClick={handleTriggerReports}
+                    disabled={isTriggeringCron}
+                    style={{
+                      backgroundColor: colors.gold, color: colors.navy, border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s'
+                    }}
+                  >
+                    {isTriggeringCron ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : 'Trigger Dispatch to All Stalls'}
+                  </button>
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px', borderRadius: '8px', fontSize: '12.5px', color: '#1E40AF', marginTop: '8px' }}>
+                    <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>Note:</strong> Manually triggering sends the report instantly, and will set a 7-day expiration countdown for PDF storage on Cloudinary.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Distribution History Table */}
+            <div style={{ backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '32px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+              <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 700, color: colors.navy }}>Distribution & Retention History</h3>
+              
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${colors.border}` }}>
+                      <th style={{ padding: '16px 12px', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted }}>DISPATCHED TIME</th>
+                      <th style={{ padding: '16px 12px', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted }}>STALL NAME</th>
+                      <th style={{ padding: '16px 12px', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted }}>CLOUD HOSTING STATUS</th>
+                      <th style={{ padding: '16px 12px', fontSize: '12.5px', fontWeight: 700, color: colors.textMuted }}>EXPIRATION RETENTION COUNTDOWN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center', padding: '48px', color: colors.textMuted, fontSize: '14.5px' }}>
+                          No AI reports dispatched yet.
+                        </td>
+                      </tr>
+                    ) : reportLogs.map((log) => {
+                      const countdown = getRemainingTime(log.expires_at, log.is_deleted);
+                      const isExpired = log.is_deleted || new Date(log.expires_at) < new Date();
+                      
+                      return (
+                        <tr key={log.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                          <td style={{ padding: '16px 12px', fontSize: '14px', color: colors.text }}>
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td style={{ padding: '16px 12px', fontSize: '14px', fontWeight: 600, color: colors.navy }}>
+                            {log.stall_name || `Stall ID #${log.stall_id}`}
+                          </td>
+                          <td style={{ padding: '16px 12px', fontSize: '14px' }}>
+                            {log.is_deleted ? (
+                              <span style={{ color: colors.textMuted, fontSize: '13px' }}>N/A (Deleted)</span>
+                            ) : (
+                              <a href={log.pdf_url} target="_blank" rel="noreferrer" style={{ color: colors.blue, textDecoration: 'underline', fontWeight: 500 }}>
+                                View PDF Report
+                              </a>
+                            )}
+                          </td>
+                          <td style={{ padding: '16px 12px', fontSize: '14px' }}>
+                            <span style={{
+                              display: 'inline-block', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 700,
+                              backgroundColor: isExpired ? '#F1F5F9' : '#ECFDF5',
+                              color: isExpired ? colors.textMuted : '#16A34A'
+                            }}>
+                              {countdown}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         )}
 

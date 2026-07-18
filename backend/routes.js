@@ -888,6 +888,191 @@ router.get('/reports/stall/:id', async (req, res) => {
     }
 });
 
+// --- ADMIN SETTINGS: AI REPORT SCHEDULER & CRON JOBS ---
+router.get('/admin/settings', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Unauthorized" });
+    try {
+        const result = await pool.query('SELECT * FROM system_settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key] = row.value;
+        });
+        res.json(settings);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch settings." });
+    }
+});
+
+router.post('/admin/settings', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Unauthorized" });
+    const { reports_auto_send, reports_schedule } = req.body;
+    try {
+        if (reports_auto_send !== undefined) {
+            await pool.query('UPDATE system_settings SET value = $1 WHERE key = \'reports_auto_send\'', [String(reports_auto_send)]);
+        }
+        if (reports_schedule !== undefined) {
+            await pool.query('UPDATE system_settings SET value = $1 WHERE key = \'reports_schedule\'', [reports_schedule]);
+        }
+        res.json({ message: "Settings updated successfully." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to update settings." });
+    }
+});
+
+router.get('/admin/reports/logs', requireAuth, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Unauthorized" });
+    try {
+        const result = await pool.query(`
+            SELECT r.*, s.name as stall_name 
+            FROM sent_reports r
+            LEFT JOIN stalls s ON r.stall_id = s.id
+            ORDER BY r.created_at DESC
+            LIMIT 50
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch report logs." });
+    }
+});
+
+router.post('/admin/cron/process-reports', async (req, res) => {
+    const isCron = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
+    let isAdmin = false;
+    
+    if (!isCron) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'ua_super_secret_crypto_key_2026');
+                if (decoded && decoded.role === 'admin') {
+                    isAdmin = true;
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (!isCron && !isAdmin) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+        if (isCron) {
+            const settingsRes = await pool.query('SELECT value FROM system_settings WHERE key = \'reports_auto_send\'');
+            if (settingsRes.rows[0]?.value !== 'true') {
+                return res.json({ message: "Auto-send is disabled. Skipping cron run." });
+            }
+        }
+
+        const stalls = await pool.query('SELECT * FROM stalls WHERE email IS NOT NULL AND is_email_verified = TRUE');
+        const rawFeedbacks = await getAllFeedback();
+        const verifiedFeedbacks = getVerifiedFeedbacks(rawFeedbacks);
+
+        let sentCount = 0;
+
+        for (const stall of stalls.rows) {
+            const stallFeedbacks = verifiedFeedbacks.filter(f => {
+                const match = f.comment?.match(/\[Stall: (.*?)\]/);
+                return match ? match[1] === stall.name : false;
+            });
+
+            const reportData = await analyzeFeedbackData(stall.name, stallFeedbacks);
+            const pdfBuffer = await generateStoreReport(reportData);
+
+            const filename = `Evaluation_Report_${stall.name.replace(/\s+/g, '_')}.pdf`;
+            const pdfUrl = await uploadPDFToCloudinary(pdfBuffer, filename);
+            const reportPublicId = `ua_canteen/reports/Evaluation_Report_${stall.name.replace(/\s+/g, '_')}.pdf`;
+
+            const htmlContent = `
+                <h2>Automated Evaluation Report</h2>
+                <p>Hello ${stall.name} owner,</p>
+                <p>Here is your automated weekly canteen evaluation update based on verified student feedback.</p>
+                <h3>AI Summary & Recommendations:</h3>
+                <p>${reportData.ai_summary || 'Please find the detailed statistics in your full report.'}</p>
+                <p>You can download your full PDF report here (Link is valid for 7 days): <a href="${pdfUrl}">${pdfUrl}</a></p>
+                <p>Sincerely,<br/>UA Canteen Administration</p>
+            `;
+
+            const { error: emailErr } = await sendEmail(
+                stall.email,
+                `Automated Evaluation Report: ${stall.name}`,
+                htmlContent,
+                pdfBuffer,
+                filename
+            );
+
+            if (!emailErr) {
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + 7);
+
+                await pool.query(`
+                    INSERT INTO sent_reports (stall_id, cloudinary_public_id, pdf_url, expires_at)
+                    VALUES ($1, $2, $3, $4)
+                `, [stall.id, reportPublicId, pdfUrl, expiresAt]);
+
+                sentCount++;
+            }
+        }
+
+        res.json({ success: true, message: `Successfully processed and sent reports to ${sentCount} stalls.` });
+    } catch (err) {
+        console.error("Cron reports processing failed:", err);
+        res.status(500).json({ error: "Internal server error running cron reports." });
+    }
+});
+
+router.post('/admin/cron/cleanup-reports', async (req, res) => {
+    const isCron = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
+    let isAdmin = false;
+
+    if (!isCron) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'ua_super_secret_crypto_key_2026');
+                if (decoded && decoded.role === 'admin') {
+                    isAdmin = true;
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (!isCron && !isAdmin) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+        const expired = await pool.query(`
+            SELECT * FROM sent_reports 
+            WHERE expires_at < NOW() AND is_deleted = FALSE
+        `);
+
+        let deletedCount = 0;
+
+        for (const report of expired.rows) {
+            try {
+                console.log(`[Cloudinary Cleanup] Deleting expired PDF: ${report.cloudinary_public_id}`);
+                await cloudinary.uploader.destroy(report.cloudinary_public_id, { resource_type: 'raw' });
+                await pool.query('UPDATE sent_reports SET is_deleted = TRUE WHERE id = $1', [report.id]);
+                deletedCount++;
+            } catch (destroyErr) {
+                console.error(`Failed to destroy Cloudinary asset ${report.cloudinary_public_id}:`, destroyErr);
+            }
+        }
+
+        res.json({ success: true, message: `Successfully cleaned up ${deletedCount} expired PDF reports from Cloudinary.` });
+    } catch (err) {
+        console.error("Cron reports cleanup failed:", err);
+        res.status(500).json({ error: "Internal server error running cron cleanup." });
+    }
+});
+
 // --- STALL MANAGEMENT ROUTES ---
 router.get('/stalls', async (req, res) => {
     try {
