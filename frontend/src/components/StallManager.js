@@ -127,29 +127,96 @@ export default function StallManager() {
   const handleDownloadQR = (stallName) => {
     try {
       const safeStallName = encodeURIComponent(stallName);
-      // Hardcode localhost base for development (or process.env in production)
       const targetUrl = `${window.location.origin}/?stall=${safeStallName}`;
-
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(targetUrl)}&margin=20`;
 
-      // Fetch the binary data, convert to a Blob so we can force a raw download instead of bouncing the browser tab
-      fetch(qrApiUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
+      showModal("Generating", "Preparing your branded QR code... Please wait.", "info");
+
+      const qrImg = new Image();
+      qrImg.crossOrigin = "anonymous";
+      qrImg.src = qrApiUrl;
+
+      qrImg.onload = () => {
+        const logoImg = new Image();
+        logoImg.src = "/app_logo.png";
+        
+        logoImg.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 500;
+          canvas.height = 580;
+          const ctx = canvas.getContext("2d");
+
+          // 1. Draw solid white background
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, 500, 580);
+
+          // 2. Draw raw QR code
+          ctx.drawImage(qrImg, 0, 0, 500, 500);
+
+          // 3. Draw white center circular border overlay
+          const centerX = 250;
+          const centerY = 250;
+          const radius = 42; // 84px diameter
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+
+          // 4. Draw center logo centered inside circle
+          const logoSize = 64; // 64px width and height
+          ctx.drawImage(logoImg, centerX - (logoSize / 2), centerY - (logoSize / 2), logoSize, logoSize);
+
+          // 5. Draw text label at the bottom
+          ctx.fillStyle = "#0C2340"; // Navy blue
+          ctx.font = "800 24px 'Inter', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(stallName.toUpperCase(), 250, 540);
+
+          // 6. Trigger download
+          const canvasUrl = canvas.toDataURL("image/png");
           const a = document.createElement('a');
           a.style.display = 'none';
-          a.href = url;
+          a.href = canvasUrl;
           a.download = `QR_${stallName.replace(/\s+/g, '_')}.png`;
           document.body.appendChild(a);
           a.click();
-          window.URL.revokeObjectURL(url);
           document.body.removeChild(a);
-        })
-        .catch(err => {
-          showModal("Error", "Failed to generate QR. Ensure you have an active internet connection.", "error");
-        });
-    } catch (e) { }
+          closeModal();
+        };
+
+        logoImg.onerror = () => {
+          // Fallback without logo
+          const canvas = document.createElement("canvas");
+          canvas.width = 500;
+          canvas.height = 580;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, 500, 580);
+          ctx.drawImage(qrImg, 0, 0, 500, 500);
+
+          ctx.fillStyle = "#0C2340";
+          ctx.font = "800 24px 'Inter', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(stallName.toUpperCase(), 250, 540);
+
+          const canvasUrl = canvas.toDataURL("image/png");
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = canvasUrl;
+          a.download = `QR_${stallName.replace(/\s+/g, '_')}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          closeModal();
+        };
+      };
+
+      qrImg.onerror = () => {
+        showModal("Error", "Failed to generate QR. Ensure you have an active internet connection.", "error");
+      };
+    } catch (e) {
+      showModal("Error", "An unexpected error occurred generating the QR code.", "error");
+    }
   };
 
   const handleDelete = (id) => {
