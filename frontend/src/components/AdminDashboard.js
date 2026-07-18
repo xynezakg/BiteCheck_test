@@ -1609,13 +1609,13 @@ export default function AdminDashboard({ navigate }) {
         {activeMenu === "records" && (
           <div style={{ animation: 'fadeUp 0.4s ease', backgroundColor: colors.white, borderRadius: '16px', border: `1px solid ${colors.border}`, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
 
-            <div style={{ padding: '32px 40px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-              <div>
-                <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Safe Customer Feedback</h1>
-                <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>Only cryptographically verified authentic records are shown here.</p>
-              </div>
+            <div style={{ padding: '32px 40px', borderBottom: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.navy, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Safe Customer Feedback</h1>
+                  <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>Only cryptographically verified authentic records are shown here.</p>
+                </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 {userRole !== 'viewer' && feedbacks.length > 0 && (
                   <button
                     onClick={handlePurgeAll}
@@ -1626,13 +1626,16 @@ export default function AdminDashboard({ navigate }) {
                     <Trash2 size={14} /> Purge Records
                   </button>
                 )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
                 {/* Filter dropdown */}
                 <select
                   value={recordsLevelFilter}
                   onChange={(e) => { setRecordsLevelFilter(e.target.value); setCurrentPage(1); }}
                   style={{
                     height: '42px',
-                    padding: '0 12px',
+                    padding: '0 16px',
                     borderRadius: '8px',
                     border: `1px solid ${colors.border}`,
                     backgroundColor: colors.white,
