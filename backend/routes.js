@@ -576,6 +576,30 @@ router.post('/feedback', requireAuth, async (req, res) => {
     if (!comment) return res.status(400).json({ error: 'Comment required' });
     if (!signature || !public_key) return res.status(400).json({ error: 'Cryptographic signature and public key are required.' });
 
+    // Extract target stall name from the comment tag: [Stall: Stall Name]
+    const stallMatch = comment.match(/\[Stall: (.*?)\]/);
+    const stallName = stallMatch ? stallMatch[1] : null;
+
+    if (stallName) {
+        try {
+            // Check if this user has already rated this stall within the last 24 hours
+            const query = `
+                SELECT COUNT(*) FROM feedbacks 
+                WHERE user_id = $1 
+                  AND created_at >= NOW() - INTERVAL '24 hours' 
+                  AND comment LIKE $2
+            `;
+            const checkResult = await pool.query(query, [user_id, `%[Stall: ${stallName}]%`]);
+            if (parseInt(checkResult.rows[0].count) > 0) {
+                return res.status(429).json({ 
+                    error: `You have already submitted feedback for ${stallName} today. Please wait until tomorrow to rate them again!` 
+                });
+            }
+        } catch (err) {
+            console.error("[Quota Check Error]:", err);
+        }
+    }
+
     const feedbackForVerify = { customer_name, rating, comment };
 
     try {
