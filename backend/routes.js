@@ -99,17 +99,251 @@ router.get('/users/verify-email', async (req, res) => {
         res.status(500).send("Internal server error during verification.");
     }
 });
+const getResetPasswordEmailTemplate = (name, resetUrl) => {
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #0C2340; border-bottom: 2px solid #E5A93C; padding-bottom: 10px;">Reset Your UA Account Password</h2>
+            <p>Hello <strong>${name}</strong>,</p>
+            <p>We received a request to reset your password. Please click the button below to set a new password. This link is valid for 1 hour:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #0C2340; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; border: 1px solid #0C2340; display: inline-block;">Reset Password</a>
+            </div>
+            <p style="font-size: 12px; color: #666;">If the button above does not work, copy and paste this URL into your browser:</p>
+            <p style="font-size: 12px; color: #0C2340; word-break: break-all;">${resetUrl}</p>
+            <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+            <p style="font-size: 11px; color: #999;">If you did not request a password reset, you can safely ignore this email.</p>
+        </div>
+    `;
+};
 
-
+const getResetPasswordPage = (token, errorMsg = "") => {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset Password - University Canteen Gateway</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background-color: #F8FAFC;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                }
+                .reset-container {
+                    background-color: #FFFFFF;
+                    border-radius: 16px;
+                    padding: 40px;
+                    max-width: 420px;
+                    width: 90%;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+                    border: 1px solid #E2E8F0;
+                    text-align: center;
+                }
+                h2 {
+                    color: #0C2340;
+                    margin-bottom: 12px;
+                    font-size: 24px;
+                    font-weight: 700;
+                }
+                p {
+                    color: #64748B;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    margin-bottom: 24px;
+                }
+                .form-group {
+                    text-align: left;
+                    margin-bottom: 20px;
+                }
+                label {
+                    display: block;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #64748B;
+                    margin-bottom: 8px;
+                    letter-spacing: 0.05em;
+                }
+                input[type="password"] {
+                    width: 100%;
+                    padding: 14px 16px;
+                    border-radius: 8px;
+                    border: 1px solid #E2E8F0;
+                    font-size: 15px;
+                    box-sizing: border-box;
+                    outline: none;
+                    transition: border-color 0.2s;
+                }
+                input[type="password"]:focus {
+                    border-color: #0C2340;
+                }
+                .btn {
+                    width: 100%;
+                    padding: 14px;
+                    background-color: #0C2340;
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 15px;
+                    cursor: pointer;
+                    transition: opacity 0.2s;
+                }
+                .btn:hover {
+                    opacity: 0.9;
+                }
+                .error {
+                    background-color: #FEF2F2;
+                    color: #EF4444;
+                    padding: 10px 14px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    margin-bottom: 20px;
+                    border: 1px solid #FCA5A5;
+                    text-align: left;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reset-container">
+                <h2>Reset Your Password</h2>
+                <p>Please enter your new password below. It must be secure and confidential.</p>
+                ${errorMsg ? `<div class="error">${errorMsg}</div>` : ''}
+                <form action="/api/users/reset-password" method="POST">
+                    <input type="hidden" name="token" value="${token}">
+                    <div class="form-group">
+                        <label>NEW PASSWORD</label>
+                        <input type="password" name="password" required minlength="6" placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label>CONFIRM NEW PASSWORD</label>
+                        <input type="password" name="confirmPassword" required minlength="6" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn">Update Password</button>
+                </form>
+            </div>
+        </body>
+        </html>
+    `;
+};
 
 // --- IDENTITY & AUTH ROUTES ---
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/auth/google', googleLogin);
 
+// POST `/users/forgot-password` (Admin-only recovery route to prevent user enumeration)
+router.post('/users/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email address is required.' });
 
+    try {
+        // Query strictly for admin accounts
+        const userResult = await pool.query('SELECT * FROM users WHERE email = $1 AND role = \'admin\'', [email]);
+        const user = userResult.rows[0];
 
-// --- ADMIN USER DEMOGRAPHICS ROUTE ---
+        // If no admin matches, return a generic success message to prevent user enumeration
+        if (!user) {
+            return res.json({ message: 'If this email address is registered as an administrator, a password reset link has been sent to your @ua.edu.ph inbox.' });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        const tokenExpires = new Date(Date.now() + 3600000); // 1 hour expiration
+
+        await pool.query(
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+            [resetToken, tokenExpires, user.id]
+        );
+
+        const baseUrl = process.env.BACKEND_URL || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;
+        const resetUrl = `${baseUrl}/api/users/reset-password?token=${resetToken}`;
+        const htmlContent = getResetPasswordEmailTemplate(user.full_name, resetUrl);
+
+        const { error: emailErr } = await sendEmail(email, 'Reset Your UA Account Password', htmlContent);
+        if (emailErr) {
+            console.error("Failed to send reset email:", emailErr);
+            return res.status(500).json({ error: 'Failed to send password reset email.' });
+        }
+
+        res.json({ message: 'If this email address is registered as an administrator, a password reset link has been sent to your @ua.edu.ph inbox.' });
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.status(500).json({ error: 'Internal server error during password reset request.' });
+    }
+});
+
+// GET `/users/reset-password`
+router.get('/users/reset-password', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send("Reset token is required.");
+
+    try {
+        const userResult = await pool.query(
+            'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+            [token]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(400).send("Invalid or expired password reset token.");
+        }
+
+        res.send(getResetPasswordPage(token));
+    } catch (error) {
+        console.error("Reset password GET error:", error);
+        res.status(500).send("Internal server error.");
+    }
+});
+
+// POST `/users/reset-password` (form submission)
+router.post('/users/reset-password', async (req, res) => {
+    const { token, password, confirmPassword } = req.body;
+    if (!token || !password || !confirmPassword) {
+        return res.status(400).send(getResetPasswordPage(token, "All fields are required."));
+    }
+
+    if (password !== confirmPassword) {
+        return res.status(400).send(getResetPasswordPage(token, "Passwords do not match."));
+    }
+
+    try {
+        const userResult = await pool.query(
+            'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+            [token]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(400).send("Invalid or expired password reset token.");
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await pool.query(
+            'UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+            [hashedPassword, user.id]
+        );
+
+        res.send(`
+            <div style="font-family: Arial, sans-serif; text-align: center; padding: 50px; max-width: 600px; margin: 50px auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <div style="font-size: 50px; color: #10B981; margin-bottom: 20px;">✓</div>
+                <h2 style="color: #0C2340; margin-bottom: 10px;">Password Reset Successful!</h2>
+                <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
+                    Your account password has been updated successfully. You can now close this window and log in with your new credentials.
+                </p>
+                <a href="${process.env.FRONTEND_URL || 'https://bite-check-frontend.vercel.app'}/login" style="background-color: #0C2340; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; border: 1px solid #0C2340; display: inline-block;">Go to Login</a>
+            </div>
+        `);
+    } catch (error) {
+        console.error("Reset password POST error:", error);
+        res.status(500).send("Internal server error resetting password.");
+    }
+});
 router.get('/admin/user-demographics', async (req, res) => {
     try {
         const result = await pool.query(`
