@@ -23,7 +23,8 @@ const badWords = [
 function sanitizeComment(text) {
     if (!text || typeof text !== 'string') return "";
     
-    let cleanText = text;
+    // Silently strip minor typographical / script symbols (\, ^, {, }, ~)
+    let cleanText = text.replace(/[\^\\{}~]/g, '');
     
     badWords.forEach(word => {
         // Create regex matching whole words case-insensitively

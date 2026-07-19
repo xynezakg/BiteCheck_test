@@ -9,13 +9,13 @@ function serializeForSignature(feedbackObj) {
     let comment = feedbackObj.comment ? String(feedbackObj.comment).trim() : "";
     comment = comment.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
-    //Extract the image so it is protected by the hash
-    const attachment = feedbackObj.attachment ? String(feedbackObj.attachment) : ""; 
+    // Protect the photo attachment using its SHA-256 hash
+    const attachmentHash = feedbackObj.attachment_hash ? String(feedbackObj.attachment_hash) : ""; 
 
     const safeName = encodeURIComponent(name);
     const safeComment = encodeURIComponent(comment);
 
-    const canonicalString = `customer_name=${safeName}&rating=${rating}&comment=${safeComment}&attachment=${attachment}`;
+    const canonicalString = `customer_name=${safeName}&rating=${rating}&comment=${safeComment}&attachment_hash=${attachmentHash}`;
     
     return nacl.util.decodeUTF8(canonicalString);
 }

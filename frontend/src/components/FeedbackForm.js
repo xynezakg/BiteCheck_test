@@ -320,8 +320,30 @@ export default function FeedbackForm({ navigate }) {
     }
   };
 
+  const calculateSha256 = async (message) => {
+    if (!message) return "";
+    try {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    } catch (e) {
+      console.error("SHA-256 calculation error:", e);
+      return "";
+    }
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+
+    // 1. Strict Symbol Validation: Block <, >, [ or ] in user comment input
+    const rawComment = form.comment || "";
+    if (/<|>|\[|\]/.test(rawComment)) {
+      showModal("Validation Error", "Special symbols '<', '>', '[', and ']' are restricted in comments to ensure security.", "error");
+      return;
+    }
+
     setStep(4); // Move progress bar to final step
     setStatus("signing");
     setSignMessage("Initializing Ed25519 Curve...");
@@ -330,13 +352,17 @@ export default function FeedbackForm({ navigate }) {
     const scoresStr = criteriaList.map(c => `${c}: ${ratings[c] || 5}/5`).join(' | ');
     const payloadText = `[Stall: ${selectedStall}] [Scores -> ${scoresStr}]\n\n${sanitizedUserComment}`;
 
+    setSignMessage("Hashing attachment file...");
+    const imageHash = imagePreview ? await calculateSha256(imagePreview) : "";
+
     const displayName = isAnonymous ? "Anonymous Student" : user.full_name;
 
-    // Exclude the image attachment from the cryptographic signature calculation
+    // Include the image hash inside the signature calculation
     const payloadToSign = {
       customer_name: displayName,
       rating: overallRating,
-      comment: payloadText
+      comment: payloadText,
+      attachment_hash: imageHash
     };
 
     try {
@@ -362,7 +388,8 @@ export default function FeedbackForm({ navigate }) {
         attachment: imagePreview,
         signature: clientSignature,
         public_key: publicKeyBase64,
-        is_anonymous: isAnonymous
+        is_anonymous: isAnonymous,
+        attachment_hash: imageHash
       };
 
       await submitFeedback(fullPayload);
@@ -388,6 +415,8 @@ export default function FeedbackForm({ navigate }) {
       setTimeout(() => setCopied(false), 2500);
     }
   };
+
+  const hasRestrictedSymbols = /<|>|\[|\]/.test(form.comment || "");
 
   if (!user) return null;
 
@@ -882,18 +911,25 @@ export default function FeedbackForm({ navigate }) {
                       <textarea
                         name="comment" placeholder="Tell us what you liked or how we can improve..." value={form.comment} onChange={handleChange}
                         maxLength={500}
-                        style={{ width: '100%', height: '140px', padding: '16px', fontSize: '15px', borderRadius: '8px', border: `1px solid ${form.comment.length > 0 && form.comment.length < 10 ? colors.red : colors.border}`, backgroundColor: colors.bg, resize: 'none', outline: 'none', color: colors.text, fontFamily: 'inherit', transition: 'border 0.2s', boxSizing: 'border-box' }}
-                        onFocus={(e) => e.target.style.borderColor = colors.navy}
-                        onBlur={(e) => e.target.style.borderColor = colors.border}
+                        style={{ width: '100%', height: '140px', padding: '16px', fontSize: '15px', borderRadius: '8px', border: `1px solid ${hasRestrictedSymbols ? colors.red : (form.comment.length > 0 && form.comment.length < 10 ? colors.red : colors.border)}`, backgroundColor: colors.bg, resize: 'none', outline: 'none', color: colors.text, fontFamily: 'inherit', transition: 'border 0.2s', boxSizing: 'border-box' }}
+                        onFocus={(e) => e.target.style.borderColor = hasRestrictedSymbols ? colors.red : colors.navy}
+                        onBlur={(e) => e.target.style.borderColor = hasRestrictedSymbols ? colors.red : colors.border}
                       ></textarea>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px' }}>
-                        <span style={{ color: form.comment.length < 10 ? colors.red : colors.success, fontWeight: 500 }}>
-                          {form.comment.length < 10 ? `Min 10 characters required (${10 - form.comment.length} left)` : "✓ Minimum length requirement met"}
+                        <span style={{ color: (hasRestrictedSymbols || form.comment.length < 10) ? colors.red : colors.success, fontWeight: 500 }}>
+                          {hasRestrictedSymbols 
+                            ? "⚠️ Restricted symbols detected" 
+                            : (form.comment.length < 10 ? `Min 10 characters required (${10 - form.comment.length} left)` : "✓ Minimum length requirement met")}
                         </span>
                         <span style={{ color: colors.textMuted }}>
                           {form.comment.length} / 500
                         </span>
                       </div>
+                      {hasRestrictedSymbols && (
+                        <div style={{ color: colors.red, fontSize: '12px', fontWeight: 600, marginTop: '6px', textAlign: 'left' }}>
+                          ⚠️ Symbols &lt;, &gt;, [ and ] are restricted to ensure comment security.
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ backgroundColor: '#F8FAFC', border: `1px solid ${colors.border}`, padding: '16px', borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => setIsAnonymous(!isAnonymous)}>
@@ -949,37 +985,37 @@ export default function FeedbackForm({ navigate }) {
                   </button>
                   <button
                     type="button"
-                    disabled={form.comment.length < 10}
+                    disabled={form.comment.length < 10 || hasRestrictedSymbols}
                     style={{
                       padding: '16px 40px',
                       fontSize: '15px',
                       fontWeight: 600,
-                      backgroundColor: form.comment.length < 10 ? '#CBD5E1' : colors.navy,
+                      backgroundColor: (form.comment.length < 10 || hasRestrictedSymbols) ? '#CBD5E1' : colors.navy,
                       color: colors.white,
                       border: 'none',
                       borderRadius: '8px',
-                      cursor: form.comment.length < 10 ? 'not-allowed' : 'pointer',
+                      cursor: (form.comment.length < 10 || hasRestrictedSymbols) ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
-                      boxShadow: form.comment.length < 10 ? 'none' : '0 4px 12px rgba(12, 35, 64, 0.2)',
+                      boxShadow: (form.comment.length < 10 || hasRestrictedSymbols) ? 'none' : '0 4px 12px rgba(12, 35, 64, 0.2)',
                       fontFamily: 'inherit',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
                     }}
                     onMouseEnter={(e) => {
-                      if (form.comment.length >= 10) {
+                      if (form.comment.length >= 10 && !hasRestrictedSymbols) {
                         e.currentTarget.style.backgroundColor = '#17365C';
                         e.currentTarget.style.transform = 'translateY(-2px)';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (form.comment.length >= 10) {
+                      if (form.comment.length >= 10 && !hasRestrictedSymbols) {
                         e.currentTarget.style.backgroundColor = colors.navy;
                         e.currentTarget.style.transform = 'none';
                       }
                     }}
                     onClick={() => {
-                      if (form.comment.length < 10) return;
+                      if (form.comment.length < 10 || hasRestrictedSymbols) return;
                       setErrorMessage("");
                       setStatus("idle");
                       setStep(3);

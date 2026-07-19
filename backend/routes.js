@@ -558,7 +558,7 @@ router.delete('/admin/criteria/:id', requireAuth, async (req, res) => {
 
 // --- SECURE FEEDBACK ROUTE ---
 router.post('/feedback', requireAuth, async (req, res) => {
-    let { rating, comment, attachment, signature, public_key, is_anonymous } = req.body;
+    let { rating, comment, attachment, signature, public_key, is_anonymous, attachment_hash } = req.body;
 
     let customer_name = req.user.full_name;
     if (is_anonymous) {
@@ -568,7 +568,18 @@ router.post('/feedback', requireAuth, async (req, res) => {
 
     rating = Number(rating);
     comment = comment ? String(comment).trim() : "";
-    comment = sanitizeComment(comment);
+
+    // 1. Strict Symbol Validation: Block <, >, [ or ] in user comment portion to prevent HTML/metadata injection
+    const userTextIndex = comment.indexOf('\n\n');
+    const userPart = userTextIndex !== -1 ? comment.substring(userTextIndex + 2) : comment;
+    if (/<|>|\[|\]/.test(userPart)) {
+        return res.status(400).json({ error: "Special symbols (<, >, [, ]) are restricted in comments to ensure security." });
+    }
+
+    // 2. Profanity Check: Flag for shadow quarantining if comment text changes after sanitization
+    const cleanComment = sanitizeComment(comment);
+    const hasProfanity = cleanComment !== comment;
+    comment = cleanComment;
 
     console.log('[FEEDBACK DEBUG] rating:', rating, '| comment length:', comment.length, '| has_sig:', !!signature, '| has_key:', !!public_key);
 
@@ -600,7 +611,9 @@ router.post('/feedback', requireAuth, async (req, res) => {
         }
     }
 
-    const feedbackForVerify = { customer_name, rating, comment };
+    // Include attachment_hash in the verification object
+    const finalHash = attachment_hash || "";
+    const feedbackForVerify = { customer_name, rating, comment, attachment_hash: finalHash };
 
     try {
         const pubKeyBin = Buffer.from(public_key, 'base64');
@@ -624,7 +637,25 @@ router.post('/feedback', requireAuth, async (req, res) => {
     }
 
     try {
-        const inserted = await addFeedback({ user_id, customer_name, rating, comment, signature, public_key, attachment, is_anonymous });
+        const inserted = await addFeedback({ 
+            user_id, 
+            customer_name, 
+            rating, 
+            comment, 
+            signature, 
+            public_key, 
+            attachment, 
+            is_anonymous,
+            attachment_hash: finalHash
+        });
+
+        // If comment was flagged with bad words, automatically quarantine it
+        if (hasProfanity) {
+            console.log(`[Content Moderator] Shadow-quarantining feedback ID #${inserted.id} due to profanity.`);
+            await quarantineFeedback(inserted.id);
+            inserted.is_quarantined = true;
+        }
+
         res.status(201).json(inserted);
     } catch (e) {
         console.error("Insert Error:", e.message);
@@ -636,12 +667,16 @@ router.get('/feedbacks', async (req, res) => {
     try {
         const rows = await getAllFeedback();
 
-        const verifiedRows = rows.map(row => {
+        // Security: Filter out quarantined feedbacks from public eyes
+        const publicRows = rows.filter(row => !row.is_quarantined);
+
+        const verifiedRows = publicRows.map(row => {
             const verifyName = row.is_anonymous ? "Anonymous Student" : row.customer_name;
             const feedbackForVerify = {
                 customer_name: verifyName,
                 rating: row.rating,
-                comment: row.comment
+                comment: row.comment,
+                attachment_hash: row.attachment_hash || ""
             };
             let valid = false;
             try {
@@ -685,7 +720,8 @@ router.get('/admin/feedbacks', requireAuth, async (req, res) => {
             const feedbackForVerify = {
                 customer_name: verifyName,
                 rating: row.rating,
-                comment: row.comment
+                comment: row.comment,
+                attachment_hash: row.attachment_hash || ""
             };
             let valid = false;
             try {
@@ -726,7 +762,7 @@ router.get('/feedback/:id/photo', async (req, res) => {
 });
 
 router.post('/verify', async (req, res) => {
-    let { id, customer_name, rating, comment, signature, public_key, attachment } = req.body;
+    let { id, customer_name, rating, comment, signature, public_key, attachment, attachment_hash } = req.body;
 
     if (!attachment && id) {
         try {
@@ -735,7 +771,7 @@ router.post('/verify', async (req, res) => {
         } catch (e) { }
     }
 
-    const feedbackForVerify = { customer_name, rating, comment };
+    const feedbackForVerify = { customer_name, rating, comment, attachment_hash: attachment_hash || "" };
 
     try {
         const pubKeyBin = Buffer.from(public_key, 'base64');
@@ -864,11 +900,14 @@ router.put('/feedback/:id/quarantine', async (req, res) => {
 // --- PDF REPORT GENERATION ROUTES ---
 const getVerifiedFeedbacks = (feedbacks) => {
     return feedbacks.filter(row => {
+        if (row.is_quarantined) return false;
+
         const verifyName = row.is_anonymous ? "Anonymous Student" : row.customer_name;
         const feedbackForVerify = {
             customer_name: verifyName,
             rating: row.rating,
-            comment: row.comment
+            comment: row.comment,
+            attachment_hash: row.attachment_hash || ""
         };
         try {
             const pubKeyBin = Buffer.from(row.public_key, 'base64');
