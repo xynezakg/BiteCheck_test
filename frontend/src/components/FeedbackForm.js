@@ -187,7 +187,17 @@ export default function FeedbackForm({ navigate }) {
           const params = new URLSearchParams(window.location.search);
           if (!params.get('stall')) {
             if (draft.selectedStall) setSelectedStall(draft.selectedStall);
-            if (draft.ratings) setRatings(draft.ratings);
+            if (draft.ratings) {
+              setRatings(prev => {
+                const newRatings = { ...prev };
+                Object.keys(draft.ratings).forEach(k => {
+                  if (newRatings[k] !== undefined) {
+                    newRatings[k] = draft.ratings[k];
+                  }
+                });
+                return newRatings;
+              });
+            }
             if (draft.comment) setForm({ comment: draft.comment });
             if (draft.isAnonymous !== undefined) setIsAnonymous(draft.isAnonymous);
             if (draft.step) setStep(draft.step);
@@ -206,11 +216,9 @@ export default function FeedbackForm({ navigate }) {
         if (data && Array.isArray(data)) {
           setCriteriaList(data);
           setRatings(prev => {
-            const newRatings = { ...prev };
+            const newRatings = {};
             data.forEach(c => {
-              if (newRatings[c] === undefined) {
-                newRatings[c] = 5;
-              }
+              newRatings[c] = prev[c] !== undefined ? prev[c] : 5;
             });
             return newRatings;
           });
@@ -265,7 +273,7 @@ export default function FeedbackForm({ navigate }) {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handleRatingChange = (category, value) => setRatings(prev => ({ ...prev, [category]: value }));
 
-  const totalScore = Object.values(ratings).reduce((sum, val) => sum + val, 0);
+  const totalScore = criteriaList.reduce((sum, category) => sum + (ratings[category] || 5), 0);
   const overallRating = criteriaList.length > 0 ? Math.round(totalScore / criteriaList.length) : 5;
 
   // Prevents white screen on logout
@@ -1071,11 +1079,14 @@ export default function FeedbackForm({ navigate }) {
                   <div style={{ borderBottom: form.comment || imagePreview ? `1px solid ${colors.border}` : 'none', paddingBottom: form.comment || imagePreview ? '16px' : '0', marginBottom: form.comment || imagePreview ? '16px' : '0' }}>
                     <span style={{ fontSize: '12px', color: colors.textMuted, fontWeight: 600, display: 'block', marginBottom: '12px', letterSpacing: '0.05em' }}>CATEGORY BREAKDOWN</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {Object.entries(ratings).map(([cat, val]) => (
-                        <div key={cat} style={{ fontSize: '12px', backgroundColor: colors.white, padding: '6px 12px', borderRadius: '20px', border: `1px solid ${colors.border}`, fontWeight: 500, color: colors.text }}>
-                          {cat}: <strong style={{ color: colors.navy }}>{val}</strong>
-                        </div>
-                      ))}
+                      {criteriaList.map((cat) => {
+                        const val = ratings[cat] || 5;
+                        return (
+                          <div key={cat} style={{ fontSize: '12px', backgroundColor: colors.white, padding: '6px 12px', borderRadius: '20px', border: `1px solid ${colors.border}`, fontWeight: 500, color: colors.text }}>
+                            {cat}: <strong style={{ color: colors.navy }}>{val}</strong>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

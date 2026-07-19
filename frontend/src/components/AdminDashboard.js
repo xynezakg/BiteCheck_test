@@ -689,16 +689,28 @@ export default function AdminDashboard({ navigate }) {
       stallName = stallMatch[1];
     }
 
-    const match = text.match(/\[Scores -> Food: (\d)\/5 \| Service: (\d)\/5 \| Staff: (\d)\/5 \| Clean: (\d)\/5 \| Value: (\d)\/5\]/);
-    if (match) {
+    const scoresMatch = text.match(/\[Scores -> (.*?)\]/);
+    let metrics = null;
+    let commentText = text;
+
+    if (scoresMatch) {
+      metrics = {};
+      const scoresString = scoresMatch[1];
+      const ratingPairs = scoresString.split(' | ');
+      ratingPairs.forEach(pair => {
+        const colonIndex = pair.indexOf(': ');
+        if (colonIndex !== -1) {
+          const category = pair.substring(0, colonIndex).trim();
+          const ratingVal = pair.substring(colonIndex + 2).replace('/5', '').trim();
+          metrics[category] = parseInt(ratingVal, 10);
+        }
+      });
+
       const parts = text.split('\n\n');
-      return {
-        stall: stallName,
-        metrics: { Food: match[1], Service: match[2], Staff: match[3], Cleanliness: match[4], Value: match[5] },
-        text: parts.slice(1).join('\n\n').trim() || "No written comment provided."
-      };
+      commentText = parts.slice(1).join('\n\n').trim() || "No written comment provided.";
     }
-    return { stall: stallName, metrics: null, text: text };
+
+    return { stall: stallName, metrics, text: commentText };
   };
 
   const formatPrecisionDate = (dateString) => {
