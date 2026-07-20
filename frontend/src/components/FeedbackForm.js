@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { submitFeedback, fetchStalls, fetchActiveCriteria } from "../api";
-import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed, Camera } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Lock, ShieldCheck, UploadCloud, Image as ImageIcon, X, Copy, LogOut, UserCheck, Store, ArrowRight, ArrowLeft, Utensils, UtensilsCrossed, Camera, QrCode } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -72,7 +72,7 @@ export default function FeedbackForm({ navigate }) {
           { facingMode: "environment" },
           {
             fps: 10,
-            qrbox: { width: 250, height: 250 }
+            qrbox: { width: 220, height: 220 }
           },
           (decodedText) => {
             handleScanSuccess(decodedText);
@@ -1253,7 +1253,7 @@ export default function FeedbackForm({ navigate }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
               <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6', marginBottom: '16px' }}>
-                <Camera size={26} />
+                <QrCode size={26} />
               </div>
               <h3 style={{ fontSize: '20px', fontWeight: 700, color: colors.navy, margin: '0 0 6px 0' }}>Scan Stall QR Code</h3>
               <p style={{ fontSize: '13px', color: colors.textMuted, margin: 0, lineHeight: 1.5 }}>
@@ -1267,13 +1267,17 @@ export default function FeedbackForm({ navigate }) {
               backgroundColor: '#0F172A', position: 'relative', width: '100%', aspectRatio: '1/1',
               boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
+              <style>{`
+                #reader canvas { display: none !important; }
+                #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 14px; }
+              `}</style>
               <div id="reader" style={{ width: '100%', height: '100%' }}></div>
               
-              {/* Overlay Overlay Scan Lines/Box */}
+              {/* Sleek Single Scan Reticle Overlay */}
               <div style={{
                 position: 'absolute', width: '220px', height: '220px',
-                border: '2px solid #E5A823', borderRadius: '16px',
-                boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.45)', pointerEvents: 'none'
+                border: '2.5px solid #E5A823', borderRadius: '18px',
+                boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)', pointerEvents: 'none'
               }}></div>
             </div>
 
