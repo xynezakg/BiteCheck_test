@@ -59,6 +59,13 @@ export default function FeedbackForm({ navigate }) {
     setShowScanner(true);
     setTimeout(async () => {
       try {
+        if (scannerRef.current) {
+          if (scannerRef.current.isScanning) {
+            await scannerRef.current.stop().catch(() => {});
+          }
+          scannerRef.current.clear();
+          scannerRef.current = null;
+        }
         const html5QrCode = new Html5Qrcode("reader");
         scannerRef.current = html5QrCode;
         await html5QrCode.start(

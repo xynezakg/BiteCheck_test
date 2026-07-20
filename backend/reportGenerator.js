@@ -7,24 +7,26 @@ const PDFDocument = require('pdfkit');
  */
 function generateStoreReport(reportData, res = null) {
     return new Promise((resolve, reject) => {
-        const doc = new PDFDocument({ margin: 50 });
+        try {
+            const safeStoreName = (reportData && reportData.storeName) ? reportData.storeName : 'UA_Canteen_Stall';
+            const doc = new PDFDocument({ margin: 50 });
 
-        let buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => {
-            let pdfData = Buffer.concat(buffers);
-            resolve(pdfData);
-        });
+            let buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => {
+                let pdfData = Buffer.concat(buffers);
+                resolve(pdfData);
+            });
 
-        if (res) {
-            // Set response headers for PDF download
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader(
-                'Content-Disposition',
-                `attachment; filename="Evaluation_Report_${reportData.storeName.replace(/\s+/g, '_')}.pdf"`
-            );
-            doc.pipe(res);
-        }
+            if (res) {
+                // Set response headers for PDF download
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader(
+                    'Content-Disposition',
+                    `attachment; filename="Evaluation_Report_${safeStoreName.replace(/\s+/g, '_')}.pdf"`
+                );
+                doc.pipe(res);
+            }
 
     // --- COLORS & STYLING ---
     const colors = {
@@ -148,6 +150,9 @@ function generateStoreReport(reportData, res = null) {
 
     // Finalize PDF
     doc.end();
+        } catch (err) {
+            reject(err);
+        }
     });
 }
 
